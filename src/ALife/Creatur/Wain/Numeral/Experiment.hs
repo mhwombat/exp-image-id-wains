@@ -111,15 +111,11 @@ data Summary = Summary
   {
     _rPopSize :: Int,
     _rMetabolismDeltaE :: Double,
-    _rChildMetabolismDeltaE :: Double,
     _rPopControlDeltaE :: Double,
-    _rChildPopControlDeltaE :: Double,
     _rCatDeltaE :: Double,
-    _rChildCatDeltaE :: Double,
     _rFlirtingDeltaE :: Double,
     _rMatingDeltaE :: Double,
     _rOldAgeDeltaE :: Double,
-    _rChildOldAgeDeltaE :: Double,
     _rOtherMatingDeltaE :: Double,
     _rNetDeltaE :: Double,
     _rChildNetDeltaE :: Double,
@@ -145,15 +141,11 @@ initSummary p = Summary
   {
     _rPopSize = p,
     _rMetabolismDeltaE = 0,
-    _rChildMetabolismDeltaE = 0,
     _rPopControlDeltaE = 0,
-    _rChildPopControlDeltaE = 0,
     _rCatDeltaE = 0,
-    _rChildCatDeltaE = 0,
     _rFlirtingDeltaE = 0,
     _rMatingDeltaE = 0,
     _rOldAgeDeltaE = 0,
-    _rChildOldAgeDeltaE = 0,
     _rOtherMatingDeltaE = 0,
     _rNetDeltaE = 0,
     _rChildNetDeltaE = 0,
@@ -177,18 +169,14 @@ summaryStats :: Summary -> [Stats.Statistic]
 summaryStats r =
   [
     Stats.dStat "pop. size" (view rPopSize r),
-    Stats.dStat "adult metabolism Δe" (view rMetabolismDeltaE r),
-    Stats.dStat "child metabolism Δe" (view rChildMetabolismDeltaE r),
-    Stats.dStat "adult pop. control Δe" (view rPopControlDeltaE r),
-    Stats.dStat "child pop. control Δe" (view rChildPopControlDeltaE r),
-    Stats.dStat "adult cat Δe" (view rCatDeltaE r),
-    Stats.dStat "child cat Δe" (view rChildCatDeltaE r),
-    Stats.dStat "adult flirting Δe" (view rFlirtingDeltaE r),
-    Stats.dStat "adult mating Δe" (view rMatingDeltaE r),
-    Stats.dStat "adult old age Δe" (view rOldAgeDeltaE r),
-    Stats.dStat "child old age Δe" (view rChildOldAgeDeltaE r),
-    Stats.dStat "other adult mating Δe" (view rOtherMatingDeltaE r),
-    Stats.dStat "adult net Δe" (view rNetDeltaE r),
+    Stats.dStat "metabolism Δe" (view rMetabolismDeltaE r),
+    Stats.dStat "pop. control Δe" (view rPopControlDeltaE r),
+    Stats.dStat "cat Δe" (view rCatDeltaE r),
+    Stats.dStat "flirting Δe" (view rFlirtingDeltaE r),
+    Stats.dStat "mating Δe" (view rMatingDeltaE r),
+    Stats.dStat "old age Δe" (view rOldAgeDeltaE r),
+    Stats.dStat "other mating Δe" (view rOtherMatingDeltaE r),
+    Stats.dStat "net Δe" (view rNetDeltaE r),
     Stats.dStat "child net Δe" (view rChildNetDeltaE r),
     Stats.dStat "Δe to reflect on" (view rDeltaEToReflectOn r),
     Stats.dStat "Δb to reflect on" (view rDeltaBToReflectOn r),
@@ -284,10 +272,7 @@ fillInSummary s = s
          + _rMatingDeltaE s
          + _rOldAgeDeltaE s
          + _rOtherMatingDeltaE s,
-    _rChildNetDeltaE = _rChildMetabolismDeltaE s
-         + _rChildPopControlDeltaE s
-         + _rChildCatDeltaE s
-         + _rChildOldAgeDeltaE s
+    _rChildNetDeltaE = 0
          -- include energy given to wains when they are born
          - _rMatingDeltaE s
          - _rOtherMatingDeltaE s
@@ -323,7 +308,8 @@ runMetabolism = do
   ccf <- use (universe . U.uChildCostFactor)
   let deltaE = metabCost bmc cpcm 1 a
                  + sum (map (metabCost bmc cpcm ccf) (view W.litter a))
-  IW.adjustEnergy subject deltaE rMetabolismDeltaE summary report
+  IW.adjustEnergy subject deltaE rMetabolismDeltaE "metabolism" summary
+    report
 
 metabCost :: Double -> Double -> Double -> ImageWain -> Double
 metabCost bmc cpcm scale w = scale * (bmc + cpcm * fromIntegral n)
@@ -390,7 +376,7 @@ runAction a = do
   let n = O.objectNum obj
   deltaE <- if correct a n then use (universe . U.uCorrectDeltaE)
                            else use (universe . U.uIncorrectDeltaE)
-  IW.adjustEnergy subject deltaE rCatDeltaE summary report
+  IW.adjustEnergy subject deltaE rCatDeltaE "correct ID" summary report
   (summary.rEatCount) += 1
 
 --
@@ -400,7 +386,8 @@ runAction a = do
 applyPopControl :: StateT Experiment IO ()
 applyPopControl = do
   deltaE <- zoom (universe . U.uPopControlDeltaE) getPS
-  IW.adjustEnergy subject deltaE rPopControlDeltaE summary report
+  IW.adjustEnergy subject deltaE rPopControlDeltaE "pop. control"
+    summary report
 
 flirt :: StateT Experiment IO ()
 flirt = do
@@ -432,7 +419,8 @@ applyFlirtationEffects :: StateT Experiment IO ()
 applyFlirtationEffects = do
   deltaE <- use (universe . U.uFlirtingDeltaE)
   report $ "Applying flirtation energy adjustment"
-  IW.adjustEnergy subject deltaE rFlirtingDeltaE summary report
+  IW.adjustEnergy subject deltaE rFlirtingDeltaE "flirting" summary
+    report
   (summary.rFlirtCount) += 1
 
 updateChildren :: StateT Experiment IO ()
@@ -449,7 +437,8 @@ killIfTooOld = do
   a <- view W.age <$> use subject
   maxAge <- use (universe . U.uMaxAge)
   when (fromIntegral a > maxAge) $
-    IW.adjustEnergy subject (-100) rOldAgeDeltaE summary report
+    IW.adjustEnergy subject (-100) rOldAgeDeltaE "old age" summary
+      report
 
 finishRound :: FilePath -> StateT (U.Universe ImageWain) IO ()
 finishRound f = do

@@ -1,5 +1,5 @@
 name:                numeral-wains
-version:             2.10
+version:             2.11
 synopsis:            ALife agent that maps images to numerals.
 description:         ALife agent that maps images to numerals.
 homepage:            https://github.com/mhwombat/numeral-wains
@@ -19,7 +19,7 @@ source-repository head
 source-repository this
   type:     git
   location: https://github.com/mhwombat/numeral-wains.git
-  tag:      2.10
+  tag:      2.11
 
 executable mnist-daemon
   main-is:          ALife/Creatur/Wain/Numeral/Daemon.hs
@@ -35,7 +35,7 @@ executable mnist-daemon
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==0.1.*,
+                    creatur-image-wains ==1.0.*,
                     creatur-wains ==7.8.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
@@ -71,7 +71,7 @@ executable mnist-init
                     colour ==2.3.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==0.1.*,
+                    creatur-image-wains ==1.0.*,
                     creatur-wains ==7.8.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
@@ -105,7 +105,7 @@ executable mnist-examine
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==0.1.*,
+                    creatur-image-wains ==1.0.*,
                     creatur-wains ==7.8.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
@@ -141,7 +141,7 @@ Test-suite mnist-tests
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==0.1.*,
+                    creatur-image-wains ==1.0.*,
                     creatur-wains ==7.8.*,
                     creatur-wains-test-utils ==0.1.*,
                     directory ==1.2.*,
@@ -176,7 +176,7 @@ executable mnist-learning-test
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==0.1.*,
+                    creatur-image-wains ==1.0.*,
                     creatur-wains ==7.8.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
@@ -210,7 +210,7 @@ executable mnist-big-test
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==0.1.*,
+                    creatur-image-wains ==1.0.*,
                     creatur-wains ==7.8.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
@@ -237,7 +237,7 @@ executable mnist-diff-analysis
                     base >=4.8 && <5,
                     creatur ==5.9.*,
                     creatur-wains ==7.8.*,
-                    creatur-image-wains ==0.1.*,
+                    creatur-image-wains ==1.0.*,
                     MonadRandom ==0.4.*,
                     directory ==1.2.*,
                     filepath ==1.4.*

@@ -62,7 +62,7 @@ import Control.Lens hiding (universe)
 import Control.Monad (when, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Random (Rand, RandomGen, getRandomR, getRandomRs,
-  evalRandIO, fromList)
+  getRandom, evalRandIO, fromList)
 import Control.Monad.State.Lazy (StateT, execStateT, evalStateT, get)
 import Data.List (intercalate, minimumBy)
 import Data.Ord (comparing)
@@ -99,7 +99,8 @@ randomImageWain wName u classifierSize = do
   dOut <- take 3 <$> getRandomRs (view U.uDefaultOutcomeRange u)
   dp <- getRandomR $ view U.uDepthRange u
   let mr = makeMuser dOut dp
-  let wBrain = makeBrain c mr dr hw
+  t <- getRandom
+  let wBrain = makeBrain c mr dr hw t
   wDevotion <- getRandomR . view U.uDevotionRange $ u
   wAgeOfMaturity <- getRandomR . view U.uMaturityRange $ u
   wPassionDelta <- getRandomR . view U.uBoredomDeltaRange $ u

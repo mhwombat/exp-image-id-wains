@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# How to generate this script:
 # :l test/BigTest.hs
 # mapM_ print [Params 60000 10000 False "/home/amy/mnist/trainingData/" "/home/amy/mnist/testData/" cr0X 0.0001 cdtX 900 0.1 0.00001 0.1 [-0.01, -0.01, -0.01, -0.01] depthX | cr0X <- [0.08,0.09,0.1,0.11], cdtX <- [0.08,0.11, 0.12, 0.13, 0.14, 0.15], depthX <- [1,2]]
 

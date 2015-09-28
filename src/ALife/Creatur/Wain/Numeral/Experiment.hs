@@ -45,7 +45,8 @@ import ALife.Creatur.Wain.Raw (raw)
 import ALife.Creatur.Wain.Response (Response, action, outcomes)
 import ALife.Creatur.Wain.UnitInterval (UIDouble, uiToDouble)
 import qualified ALife.Creatur.Wain.Statistics as Stats
-import ALife.Creatur.Wain.Numeral.Action (Action(..), correct, numActions)
+import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
+  correctActions, numActions)
 import ALife.Creatur.Wain.Image (bigX)
 import ALife.Creatur.Wain.ImageTweaker (ImageTweaker(..))
 import ALife.Creatur.Wain.ImageDB (ImageDB, anyImage)
@@ -230,6 +231,13 @@ run _ = error "too few wains"
 
 run' :: StateT Experiment IO ()
 run' = do
+  t <- zoom universe U.currentTime
+  if (t < 100)
+    then imprintCorrectAction
+    else runNormal
+
+runNormal :: StateT Experiment IO ()
+runNormal = do
   (e0, ec0) <- totalEnergy
   a <- use subject
   report $ "---------- " ++ agentId a ++ "'s turn ----------"
@@ -527,6 +535,17 @@ letSubjectReflect wainBefore r = do
       ++ " (with) " ++ O.objectId b ++ " was a mistake"
     (summary . rMistakeCount) += 1
 
+imprintCorrectAction :: StateT Experiment IO ()
+imprintCorrectAction = do
+  w <- use subject
+  obj <- use other
+  let p = O.objectAppearance obj
+  let a = correctActions !! (O.objectNum obj)
+  report $ "Teaching " ++ agentId w ++ " that correct action for "
+    ++ O.objectId obj ++ " is " ++ show a
+  let w' = W.imprint [p] a w
+  assign subject w' 
+  
 writeRawStats
   :: String -> FilePath -> [Stats.Statistic]
     -> StateT (U.Universe ImageWain) IO ()

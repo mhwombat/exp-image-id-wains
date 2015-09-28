@@ -15,6 +15,7 @@ module ALife.Creatur.Wain.Numeral.Action
   (
     Action(..),
     correct,
+    correctActions,
     numActions
   ) where
 
@@ -53,5 +54,9 @@ correct Identify_8 8 = True
 correct Identify_9 9 = True
 correct _ _ = False
 
+correctActions :: [Action]
+correctActions = [ Identify_0, Identify_1, Identify_2, Identify_3,
+                   Identify_4, Identify_5, Identify_6, Identify_7,
+                   Identify_8, Identify_9, Flirt ]
 numActions :: Int
 numActions = 1 + fromEnum (maxBound :: Action)

@@ -1,5 +1,5 @@
 name:                numeral-wains
-version:             2.12
+version:             2.13
 synopsis:            ALife agent that maps images to numerals.
 description:         ALife agent that maps images to numerals.
 homepage:            https://github.com/mhwombat/numeral-wains
@@ -19,7 +19,7 @@ source-repository head
 source-repository this
   type:     git
   location: https://github.com/mhwombat/numeral-wains.git
-  tag:      2.12
+  tag:      2.13
 
 executable mnist-daemon
   main-is:          ALife/Creatur/Wain/Numeral/Daemon.hs

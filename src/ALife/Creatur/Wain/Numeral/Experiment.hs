@@ -32,13 +32,13 @@ import ALife.Creatur (agentId, isAlive)
 import ALife.Creatur.Task (checkPopSize)
 import qualified ALife.Creatur.Wain as W
 import ALife.Creatur.Wain.Brain (makeBrain, scenarioReport,
-  responseReport, decisionReport, classifier)
+  responseReport, decisionReport)
 import ALife.Creatur.Wain.Checkpoint (enforceAll)
 import qualified ALife.Creatur.Wain.Classifier as Cl
 import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
 import ALife.Creatur.Wain.GeneticSOM (RandomExponentialParams(..),
-  randomExponential, schemaQuality, numModels)
+  randomExponential, schemaQuality)
 import qualified ALife.Creatur.Wain.Object as O
 import ALife.Creatur.Wain.Pretty (pretty)
 import ALife.Creatur.Wain.Raw (raw)
@@ -246,7 +246,6 @@ run' = do
 --  subject %= W.autoAdjustBoredom
   subject %= W.incAge
   a' <- use subject
-  zoom universe . U.writeToLog $ "End of " ++ agentId a ++ "'s turn"
   -- assign (summary.rNetDeltaE) (energy a' - energy a)
   unless (isAlive a') $ assign (summary.rDeathCount) 1
   summary %= fillInSummary
@@ -306,14 +305,11 @@ runMetabolism = do
   bmc <- use (universe . U.uBaseMetabolismDeltaE)
   cpcm <- use (universe . U.uEnergyCostPerClassifierModel)
   ccf <- use (universe . U.uChildCostFactor)
-  let deltaE = metabCost bmc cpcm 1 a
-                 + sum (map (metabCost bmc cpcm ccf) (view W.litter a))
-  IW.adjustEnergy subject deltaE rMetabolismDeltaE "metabolism" summary
+  let deltaE = IW.metabCost bmc cpcm 1 a
+                 + sum (map (IW.metabCost bmc cpcm ccf)
+                         (view W.litter a))
+  IW.adjustEnergy subject deltaE rMetabolismDeltaE "metab." summary
     report
-
-metabCost :: Double -> Double -> Double -> ImageWain -> Double
-metabCost bmc cpcm scale w = scale * (bmc + cpcm * fromIntegral n)
-  where n = numModels . view (W.brain . classifier) $ w
 
 chooseSubjectAction
   :: StateT Experiment IO (Response Action)
@@ -386,8 +382,8 @@ runAction a = do
 applyPopControl :: StateT Experiment IO ()
 applyPopControl = do
   deltaE <- zoom (universe . U.uPopControlDeltaE) getPS
-  IW.adjustEnergy subject deltaE rPopControlDeltaE "pop. control"
-    summary report
+  IW.adjustEnergy subject deltaE rPopControlDeltaE
+    "pop. control" summary report
 
 flirt :: StateT Experiment IO ()
 flirt = do
@@ -450,26 +446,29 @@ finishRound f = do
   cs <- use U.uCheckpoints
   enforceAll zs cs
   clearStats f
-  (a, b) <- use U.uPopulationAllowedRange
+  (a, b) <- use U.uAllowedPopulationRange
   checkPopSize (a, b)
 
 adjustPopControlDeltaE
   :: [Stats.Statistic] -> StateT (U.Universe ImageWain) IO ()
 adjustPopControlDeltaE xs =
   unless (null xs) $ do
+    let (Just average) = Stats.lookup "avg. energy" xs
+    let (Just total) = Stats.lookup "total energy" xs
+    budget <- use U.uEnergyBudget
     pop <- U.popSize
-    U.writeToLog $ "pop=" ++ show pop
-    idealPop <- use U.uIdealPopulationSize
-    U.writeToLog $ "ideal pop=" ++ show idealPop
-    energyToAddWain <- use U.uEnergyToAddWain
-    U.writeToLog $ "energy to add one wain=" ++ show energyToAddWain
-    let c = idealPopControlDeltaE idealPop pop energyToAddWain
+    let c = idealPopControlDeltaE average total budget pop
+    U.writeToLog $ "Current avg. energy = " ++ show average
+    U.writeToLog $ "Current total energy = " ++ show total
+    U.writeToLog $ "energy budget = " ++ show budget
     U.writeToLog $ "Adjusted pop. control Δe = " ++ show c
     zoom U.uPopControlDeltaE $ putPS c
 
-idealPopControlDeltaE :: Int -> Int -> Double -> Double
-idealPopControlDeltaE idealPop pop energyToAddWain
-  = energyToAddWain*fromIntegral (idealPop - pop) / fromIntegral pop
+-- TODO: Make the numbers configurable
+idealPopControlDeltaE :: Double -> Double -> Double -> Int -> Double
+idealPopControlDeltaE average total budget pop
+  | average < 0.8 = min 0.08 $ (budget - total) / (fromIntegral pop)
+  | otherwise     = 0.8 - average
 
 totalEnergy :: StateT Experiment IO (Double, Double)
 totalEnergy = do

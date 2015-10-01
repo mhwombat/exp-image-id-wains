@@ -42,7 +42,7 @@ import ALife.Creatur.Wain.GeneticSOM (RandomExponentialParams(..),
 import qualified ALife.Creatur.Wain.Object as O
 import ALife.Creatur.Wain.Pretty (pretty)
 import ALife.Creatur.Wain.Raw (raw)
-import ALife.Creatur.Wain.Response (Response, action, outcomes)
+import ALife.Creatur.Wain.Response (Response, _action, _outcomes)
 import ALife.Creatur.Wain.UnitInterval (UIDouble, uiToDouble)
 import qualified ALife.Creatur.Wain.Statistics as Stats
 import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
@@ -64,7 +64,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Random (Rand, RandomGen, getRandomR, getRandomRs,
   getRandom, evalRandIO, fromList)
 import Control.Monad.State.Lazy (StateT, execStateT, evalStateT, get)
-import Data.List (intercalate, minimumBy)
+import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
 import Data.Word (Word16)
 import System.Directory (createDirectoryIfMissing)
@@ -249,7 +249,7 @@ runNormal = do
   when autoPopControl applyPopControl
   r <- chooseSubjectAction
   wainBeforeAction <- use subject
-  runAction (view action r)
+  runAction (_action r)
   letSubjectReflect wainBeforeAction r
   subject %= W.autoAdjustPassion
 --  subject %= W.autoAdjustBoredom
@@ -338,7 +338,6 @@ chooseAction3 w obj = do
     (mapM_ U.writeToLog . IW.describePredictorModels $ w)
   let (lds, sps, rplos, aos, r, w')
         = W.chooseAction [O.objectAppearance obj] w
-  let objLabel = analyseClassification lds
   -- whenM (use U.uGenFmris) (writeFmri w)
   whenM (use U.uGenFmris)
     (mapM_ U.writeToLog . IW.describeClassifierModels $ w)
@@ -346,16 +345,12 @@ chooseAction3 w obj = do
     mapM_ U.writeToLog $ scenarioReport sps
     mapM_ U.writeToLog $ responseReport rplos
     mapM_ U.writeToLog $ decisionReport aos
-  U.writeToLog $  agentId w ++ " sees " ++ O.objectId obj
-    ++ ", classifies it as " ++ show objLabel ++ " and chooses to "
-    ++ show (view action r) ++ " predicting the outcomes "
-    ++ show (view outcomes r)
+  let (cBMU, _):(cBMU2, _):_ = sortBy (comparing snd) . head $ lds
+  U.writeToLog $ agentId w ++ " sees " ++ O.objectId obj
+    ++ ", classifies it as " ++ show cBMU ++ " (alt. " ++ show cBMU2
+    ++ ") and chooses to " ++ show (_action r)
+    ++ " predicting the outcomes " ++ show (_outcomes r)
   return (r, w')
-
-analyseClassification
-  :: [[(Cl.Label, Cl.Difference)]] -> Cl.Label
-analyseClassification ldss = l
-  where ((l, _):_) = map (minimumBy (comparing snd)) ldss
 
 chooseObject :: [Rational] -> ImageWain -> ImageDB -> IO Object
 chooseObject freqs w db = do
@@ -381,7 +376,7 @@ runAction a = do
   let n = O.objectNum obj
   deltaE <- if correct a n then use (universe . U.uCorrectDeltaE)
                            else use (universe . U.uIncorrectDeltaE)
-  IW.adjustEnergy subject deltaE rCatDeltaE "correct ID" summary report
+  IW.adjustEnergy subject deltaE rCatDeltaE "image ID" summary report
   (summary.rEatCount) += 1
 
 --
@@ -510,7 +505,8 @@ letSubjectReflect
   :: ImageWain -> Response Action -> StateT Experiment IO ()
 letSubjectReflect wainBefore r = do
   w <- use subject
-  p <- O.objectAppearance <$> use other
+  obj <- use other
+  let p = O.objectAppearance obj
   let energyBefore = view W.energy wainBefore
   let boredomBefore = view W.boredom wainBefore
   let passionBefore = view W.passion wainBefore
@@ -530,9 +526,9 @@ letSubjectReflect wainBefore r = do
   let (w', err) = W.reflect [p] r wainBefore w
   assign subject w'
   assign (summary . rErr) err
-  when (deltaH < 0) $ do
+  when (correct (_action r) (O.objectNum obj)) $ do
     b <- use other
-    report $ agentId w ++ "'s choice to " ++ show (view action r)
+    report $ agentId w ++ "'s choice to " ++ show (_action r)
       ++ " (with) " ++ O.objectId b ++ " was a mistake"
     (summary . rMistakeCount) += 1
 

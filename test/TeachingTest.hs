@@ -116,7 +116,7 @@ tryOne w obj = do
   putHtmlLn $ "condition before=" ++ show (condition w) ++ " after=" ++ show (condition wainRewarded)
   putHtmlLn $ "happiness before=" ++ show (happiness w) ++ " after=" ++ show (happiness wainRewarded)
   putHtml $ "Choosing to " ++ show a ++ " in response to " ++ objectId obj
-  if deltaH < 0
+  if a /= correctActions !! (objectNum obj)
     then putHtmlLn " was wrong"
     else putHtmlLn " was correct"
   let (wainAfterReflection, err) = reflect [objectAppearance obj] r w wainRewarded

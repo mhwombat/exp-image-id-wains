@@ -13,11 +13,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
+import ALife.Creatur (programVersion)
 import ALife.Creatur.Util (shuffle)
 import ALife.Creatur.Wain
 import ALife.Creatur.Wain.Classifier (buildClassifier)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
-import ALife.Creatur.Wain.Numeral.Action (Action(..), correct, numActions)
+import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
+  numActions, correctActions)
 import ALife.Creatur.Wain.Numeral.Experiment
 import ALife.Creatur.Wain.Image
 import ALife.Creatur.Wain.Muser (makeMuser)
@@ -31,7 +33,7 @@ import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
 import ALife.Creatur.Wain.PlusMinusOne (PM1Double)
 import ALife.Creatur.Wain.Pretty (pretty)
 import ALife.Creatur.Wain.Statistics (stats)
-import ALife.Creatur.Wain.UnitInterval (UIDouble, uiToDouble)
+import ALife.Creatur.Wain.UnitInterval (UIDouble)
 import ALife.Creatur.Wain.Weights (makeWeights)
 import Control.Lens
 import Control.Monad (when, foldM)
@@ -40,19 +42,29 @@ import Data.ByteString as BS (readFile, writeFile)
 import qualified Data.Map.Strict as M
 import Data.List (minimumBy, foldl')
 import Data.Ord (comparing)
+import Data.Version (showVersion)
 import qualified Data.Serialize as DS (decode, encode)
 import Data.Word (Word8, Word16)
+import Paths_numeral_wains (version)
 import System.Directory
 import System.FilePath.Posix (takeFileName)
 import System.Environment (getArgs)
+
+versionInfo :: String
+versionInfo
+  = "numeral-wains-" ++ showVersion version
+      ++ ", compiled with " ++ ALife.Creatur.Wain.programVersion
+      ++ ", " ++ ALife.Creatur.programVersion
 
 runAction :: Action -> Object Action -> ImageWain -> ImageWain
 runAction a obj w =
   if correct a (objectNum obj)
     then wCorrect
     else wIncorrect
-  where (wCorrect, _) = adjustEnergy 0.1 w
-        (wIncorrect, _) = adjustEnergy (-0.1) w
+  -- Reward should be the same as they get from imprinting. Otherwise
+  -- they may be tempted to experiment with other classifications.
+  where (wCorrect, _) = adjustEnergy 1 w
+        (wIncorrect, _) = adjustEnergy (-1) w
 
 data Params = Params
   {
@@ -92,18 +104,22 @@ testWain p = w'
               wDevotion wAgeOfMaturity wPassionDelta wBoredomDelta
         (w', _) = adjustEnergy 0.5 w
 
-trainOne :: ImageWain -> Object Action -> ImageWain
-trainOne w obj = wainFinal
-  where (_, _, _, _, r, wainAfterDecision) = chooseAction [objectAppearance obj] w
-        a = view action r
-        wainRewarded = runAction a obj wainAfterDecision
-        (wainAfterReflection, _) = reflect [objectAppearance obj] r wainAfterDecision wainRewarded
-        -- keep the wain's energy constant
-        restorationEnergy = uiToDouble (view energy w) - uiToDouble (view energy wainRewarded)
-        -- keep the wain's boredom constant
-        restorationBoredom = uiToDouble (view boredom w) - uiToDouble (view boredom wainRewarded)
-        (wainPartiallyRestored, _) = adjustEnergy restorationEnergy wainAfterReflection
-        (wainFinal, _) = adjustBoredom restorationBoredom wainPartiallyRestored
+-- trainOne :: ImageWain -> Object Action -> ImageWain
+-- trainOne w obj = wainFinal
+--   where (_, _, _, _, r, wainAfterDecision) = chooseAction [objectAppearance obj] w
+--         a = view action r
+--         wainRewarded = runAction a obj wainAfterDecision
+--         (wainAfterReflection, _) = reflect [objectAppearance obj] r wainAfterDecision wainRewarded
+--         -- keep the wain's energy constant
+--         restorationEnergy = uiToDouble (view energy w) - uiToDouble (view energy wainRewarded)
+--         -- keep the wain's boredom constant
+--         restorationBoredom = uiToDouble (view boredom w) - uiToDouble (view boredom wainRewarded)
+--         (wainPartiallyRestored, _) = adjustEnergy restorationEnergy wainAfterReflection
+--         (wainFinal, _) = adjustBoredom restorationBoredom wainPartiallyRestored
+
+imprintOne :: ImageWain -> Object Action -> ImageWain
+imprintOne w obj = imprint [objectAppearance obj] a w
+  where a = correctActions !! (objectNum obj)
 
 testOne :: Bool -> ImageWain -> Int -> Object Action -> IO Int
 testOne rn w k obj = do
@@ -151,9 +167,11 @@ readImage2 f = do
 trial :: [Object Action] -> [Object Action] -> Params -> IO ()
 trial xs ys p = do
   w <- fetchWain p
-  let wTrained = foldl' trainOne w xs
+  -- let wTrained = foldl' trainOne w xs
+  let wTrained = foldl' imprintOne w xs
   k <- foldM (testOne (reportNovelty p) wTrained) 0 ys
   putStrLn $ show k ++ ", " ++ show p ++ ", " ++ show (stats wTrained)
+    ++ " " ++ versionInfo
   writeWain wTrained
 
 wainFile :: FilePath

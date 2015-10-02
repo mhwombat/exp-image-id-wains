@@ -13,25 +13,26 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
-import ALife.Creatur.Util (shuffle)
 import ALife.Creatur.Wain
-import ALife.Creatur.Wain.Classifier (buildClassifier)
-import ALife.Creatur.Wain.Predictor (buildPredictor)
-import ALife.Creatur.Wain.Numeral.Action (Action(..), correct)
-import ALife.Creatur.Wain.Numeral.Experiment
-import ALife.Creatur.Wain.Image
-import ALife.Creatur.Wain.Muser (makeMuser)
-import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
-  objectAppearance)
-import ALife.Creatur.Wain.Statistics (stats)
-import ALife.Creatur.Wain.Response (action, outcomes)
-import ALife.Creatur.Wain.GeneticSOMInternal (ExponentialParams(..))
 import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
   makeBrain, scenarioReport, responseReport, decisionReport,
   decisionQuality)
+import ALife.Creatur.Wain.Classifier (buildClassifier)
+import ALife.Creatur.Wain.GeneticSOMInternal (ExponentialParams(..))
+import ALife.Creatur.Wain.Image
 import qualified ALife.Creatur.Wain.ImageWain as IW
+import ALife.Creatur.Wain.Muser (makeMuser)
+import ALife.Creatur.Wain.Numeral.Action (Action(..), correct)
+import ALife.Creatur.Wain.Numeral.Experiment
+import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
+  objectAppearance)
+import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
+import ALife.Creatur.Wain.Predictor (buildPredictor)
+import ALife.Creatur.Wain.Response (action, outcomes)
+import ALife.Creatur.Wain.Statistics (stats)
 import ALife.Creatur.Wain.UnitInterval (uiToDouble)
 import ALife.Creatur.Wain.Weights (makeWeights)
+import ALife.Creatur.Util (shuffle)
 import Control.Lens
 import Control.Monad (foldM)
 import Control.Monad.Random (evalRand, mkStdGen)
@@ -43,19 +44,22 @@ import System.FilePath.Posix (takeFileName)
 numTests :: Int
 numTests = 1000
 
+reward :: Double
+reward = 0.1
+
 runAction :: Action -> Object Action -> ImageWain -> ImageWain
 runAction a obj w =
   if correct a (objectNum obj)
     then wCorrect
     else wIncorrect
-  where (wCorrect, _) = adjustEnergy 0.1 w
-        (wIncorrect, _) = adjustEnergy (-0.1) w
+  where (wCorrect, _) = adjustEnergy reward w
+        (wIncorrect, _) = adjustEnergy (-reward) w
         
 testWain :: ImageWain
 testWain = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
-        wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1
+        wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 wIos
         wDevotion = 0.1
         wAgeOfMaturity = 100
         wPassionDelta = 0
@@ -63,6 +67,7 @@ testWain = w'
         wClassifier = buildClassifier ec wCSize 0.14 ImageTweaker
         wCSize = 500
         wMuser = makeMuser [0, 0, 0, 0] 1
+        wIos = [doubleToPM1 reward, 0, 0, 0]
         wPredictor = buildPredictor ep (wCSize*11) 0.1
         wHappinessWeights = makeWeights [1, 0, 0]
         -- The classifier does most of its learning by round 100.

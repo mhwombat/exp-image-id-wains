@@ -24,11 +24,12 @@ module ALife.Creatur.Wain.Numeral.Experiment
     finishRound,
     schemaQuality,
     printStats,
+    versionInfo,
     -- items below are only exported for testing
     idealPopControlDeltaE
   ) where
 
-import ALife.Creatur (agentId, isAlive)
+import ALife.Creatur (agentId, isAlive, programVersion)
 import ALife.Creatur.Task (checkPopSize)
 import qualified ALife.Creatur.Wain as W
 import ALife.Creatur.Wain.Brain (makeBrain, scenarioReport,
@@ -66,9 +67,17 @@ import Control.Monad.Random (Rand, RandomGen, getRandomR, getRandomRs,
 import Control.Monad.State.Lazy (StateT, execStateT, evalStateT, get)
 import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
+import Data.Version (showVersion)
 import Data.Word (Word16)
+import Paths_numeral_wains (version)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName)
+
+versionInfo :: String
+versionInfo
+  = "numeral-wains-" ++ showVersion version
+      ++ ", compiled with " ++ W.packageVersion
+      ++ ", " ++ ALife.Creatur.programVersion
 
 type ImageWain = IW.ImageWain Action
 type Object = O.Object Action
@@ -95,12 +104,13 @@ randomImageWain wName u classifierSize = do
   let dr = buildPredictor fd predictorSize predictorThreshold
   -- TODO: Allow a range of random weights
   -- hw <- (makeWeights . take 3) <$> getRandomRs unitInterval
-  let hw = makeWeights [0.7, 0.3, 0.1]
-  dOut <- take 3 <$> getRandomRs (view U.uDefaultOutcomeRange u)
+  let hw = makeWeights [0.7, 0.3, 0, 0.1]
+  dOut <- take 4 <$> getRandomRs (view U.uDefaultOutcomeRange u)
   dp <- getRandomR $ view U.uDepthRange u
   let mr = makeMuser dOut dp
   t <- getRandom
-  let wBrain = makeBrain c mr dr hw t
+  ios <- take 4 <$> getRandomRs (view U.uImprintOutcomeRange u)
+  let wBrain = makeBrain c mr dr hw t ios
   wDevotion <- getRandomR . view U.uDevotionRange $ u
   wAgeOfMaturity <- getRandomR . view U.uMaturityRange $ u
   wPassionDelta <- getRandomR . view U.uBoredomDeltaRange $ u
@@ -526,11 +536,14 @@ letSubjectReflect wainBefore r = do
   let (w', err) = W.reflect [p] r wainBefore w
   assign subject w'
   assign (summary . rErr) err
-  when (correct (_action r) (O.objectNum obj)) $ do
-    b <- use other
-    report $ agentId w ++ "'s choice to " ++ show (_action r)
-      ++ " (with) " ++ O.objectId b ++ " was a mistake"
-    (summary . rMistakeCount) += 1
+  if (correct (_action r) (O.objectNum obj))
+    then
+      report $ agentId w ++ "'s choice to " ++ show (_action r)
+        ++ " (with) " ++ O.objectId obj ++ " was correct"
+    else do
+      report $ agentId w ++ "'s choice to " ++ show (_action r)
+        ++ " (with) " ++ O.objectId obj ++ " was wrong"
+      (summary . rMistakeCount) += 1
 
 imprintCorrectAction :: StateT Experiment IO ()
 imprintCorrectAction = do

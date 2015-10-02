@@ -13,24 +13,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
 
-import ALife.Creatur (programVersion)
 import ALife.Creatur.Util (shuffle)
 import ALife.Creatur.Wain
 import ALife.Creatur.Wain.Classifier (buildClassifier)
-import ALife.Creatur.Wain.Predictor (buildPredictor)
+import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
+  makeBrain)
+import ALife.Creatur.Wain.GeneticSOMInternal (ExponentialParams(..),
+  modelMap, Difference)
+import ALife.Creatur.Wain.Image
+import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
   numActions, correctActions)
 import ALife.Creatur.Wain.Numeral.Experiment
-import ALife.Creatur.Wain.Image
-import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
   objectAppearance)
+import ALife.Creatur.Wain.Predictor (buildPredictor)
 import ALife.Creatur.Wain.Response (Response, action)
-import ALife.Creatur.Wain.GeneticSOMInternal (ExponentialParams(..),
-  modelMap, Difference)
-import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
-  makeBrain)
-import ALife.Creatur.Wain.PlusMinusOne (PM1Double)
+import ALife.Creatur.Wain.PlusMinusOne (PM1Double, doubleToPM1)
 import ALife.Creatur.Wain.Pretty (pretty)
 import ALife.Creatur.Wain.Statistics (stats)
 import ALife.Creatur.Wain.UnitInterval (UIDouble)
@@ -42,19 +41,14 @@ import Data.ByteString as BS (readFile, writeFile)
 import qualified Data.Map.Strict as M
 import Data.List (minimumBy, foldl')
 import Data.Ord (comparing)
-import Data.Version (showVersion)
 import qualified Data.Serialize as DS (decode, encode)
 import Data.Word (Word8, Word16)
-import Paths_numeral_wains (version)
 import System.Directory
 import System.FilePath.Posix (takeFileName)
 import System.Environment (getArgs)
 
-versionInfo :: String
-versionInfo
-  = "numeral-wains-" ++ showVersion version
-      ++ ", compiled with " ++ ALife.Creatur.Wain.programVersion
-      ++ ", " ++ ALife.Creatur.programVersion
+reward :: Double
+reward = 0.1
 
 runAction :: Action -> Object Action -> ImageWain -> ImageWain
 runAction a obj w =
@@ -63,8 +57,8 @@ runAction a obj w =
     else wIncorrect
   -- Reward should be the same as they get from imprinting. Otherwise
   -- they may be tempted to experiment with other classifications.
-  where (wCorrect, _) = adjustEnergy 1 w
-        (wIncorrect, _) = adjustEnergy (-1) w
+  where (wCorrect, _) = adjustEnergy reward w
+        (wIncorrect, _) = adjustEnergy (-reward) w
 
 data Params = Params
   {
@@ -88,13 +82,14 @@ testWain :: Params -> ImageWain
 testWain p = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
-        wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1
+        wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 wIos
         wDevotion = 0.1
         wAgeOfMaturity = 100
         wPassionDelta = 0
         wBoredomDelta = 0
         wClassifier = buildClassifier ec (cSize p) (cdt p) ImageTweaker
         wMuser = makeMuser (defO p) (depth p)
+        wIos = [doubleToPM1 reward, 0, 0, 0]
         wPredictorSize = cSize p * fromIntegral numActions
         wPredictor = buildPredictor ep wPredictorSize (pdt p)
         wHappinessWeights = makeWeights [1]

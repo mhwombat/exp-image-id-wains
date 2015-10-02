@@ -14,25 +14,26 @@
 module Main where
 
 import ALife.Creatur (agentId)
-import ALife.Creatur.Util (shuffle)
 import ALife.Creatur.Wain
+import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
+  makeBrain, decisionQuality)
 import ALife.Creatur.Wain.Classifier (buildClassifier)
-import ALife.Creatur.Wain.Predictor (buildPredictor)
+import ALife.Creatur.Wain.GeneticSOMInternal (ExponentialParams(..))
+import ALife.Creatur.Wain.Image
+import qualified ALife.Creatur.Wain.ImageWain as IW
+import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
   correctActions)
 import ALife.Creatur.Wain.Numeral.Experiment
-import ALife.Creatur.Wain.Image
-import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
   objectAppearance)
-import ALife.Creatur.Wain.Statistics (stats)
+import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
+import ALife.Creatur.Wain.Predictor (buildPredictor)
 import ALife.Creatur.Wain.Response (action, outcomes)
-import ALife.Creatur.Wain.GeneticSOMInternal (ExponentialParams(..))
-import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
-  makeBrain, decisionQuality)
-import qualified ALife.Creatur.Wain.ImageWain as IW
+import ALife.Creatur.Wain.Statistics (stats)
 import ALife.Creatur.Wain.UnitInterval (uiToDouble)
 import ALife.Creatur.Wain.Weights (makeWeights)
+import ALife.Creatur.Util (shuffle)
 import Control.Lens
 import Control.Monad (foldM)
 import Control.Monad.Random (evalRand, mkStdGen)
@@ -41,26 +42,30 @@ import Data.Ord (comparing)
 import System.Directory
 import System.FilePath.Posix (takeFileName)
 
+reward :: Double
+reward = 0.1
+
 runAction :: Action -> Object Action -> ImageWain -> ImageWain
 runAction a obj w =
   if correct a (objectNum obj)
     then wCorrect
     else wIncorrect
-  where (wCorrect, _) = adjustEnergy 0.1 w
-        (wIncorrect, _) = adjustEnergy (-0.1) w
+  where (wCorrect, _) = adjustEnergy reward w
+        (wIncorrect, _) = adjustEnergy (-reward) w
         
 testWain :: ImageWain
 testWain = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
-        wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1
+        wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 wIos
         wDevotion = 0.1
         wAgeOfMaturity = 100
         wPassionDelta = 0
         wBoredomDelta = 0
         wClassifier = buildClassifier ec wCSize 0.07 ImageTweaker
         wCSize = 500
-        wMuser = makeMuser [0.111, 0.222, 0.333, 0.444] 1
+        wMuser = makeMuser [-1, -1, -1, -1] 1
+        wIos = [doubleToPM1 reward, 0, 0, 0]
         wPredictor = buildPredictor ep (wCSize*11) 0.1
         wHappinessWeights = makeWeights [1, 0, 0, 0]
         -- The classifier does most of its learning by round 100.
@@ -91,8 +96,8 @@ tryOne w obj = do
   putHtmlLn "Initial classifier models:"
   mapM_ putHtml $ IW.describeClassifierModels w
   putHtmlLn ""
-  -- putHtmlLn "Initial prediction models"
-  -- mapM_ putHtmlLn $ IW.describePredictorModels w
+  putHtmlLn "Initial prediction models"
+  mapM_ putHtmlLn $ IW.describePredictorModels w
   let (lds, _, _, _, r, wainAfterDecision) = chooseAction [objectAppearance obj] w
   -- putHtmlLn $ "DEBUG lds=" ++ show lds
   let (cBMU, _):(cBMU2, _):_ = sortBy (comparing snd) . head $ lds
@@ -131,24 +136,6 @@ tryOne w obj = do
   putHtmlLn $ "predictor SQ=" ++ show (schemaQuality . view (brain . predictor) $ w)
   putHtmlLn $ "DQ=" ++ show (decisionQuality . view brain $ w)
   return wainFinal
-
--- describeClassifierModels :: ImageWain -> IO ()
--- describeClassifierModels w = mapM_ (putHtml . f) ms >> putHtmlLn ""
---   where ms = M.toList . modelMap . view (brain . classifier) $ w
---         f (l, r) = show l ++ ": <img src='data:image/png;base64,"
---                      ++ base64encode r ++ "'/>"
-
--- describePredictorModels :: ImageWain -> IO ()
--- describePredictorModels w = describePredictorModels' ms
---   where ms = M.toList . modelMap . view (brain . predictor) $ w
-
--- describePredictorModels' :: [(Label, Response Action)] -> IO ()
--- describePredictorModels' [] = return ()
--- describePredictorModels' xs = do
---   putHtmlLn $ concatMap f ys
---   describePredictorModels' zs
---   where (ys, zs) = splitAt 4 xs
---         f (l, r) = show l ++ ": " ++ pretty r ++ " "
 
 dir :: String
 dir = "/home/eamybut/mnist/trainingData/"

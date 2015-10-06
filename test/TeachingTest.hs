@@ -62,14 +62,14 @@ testWain = w'
         wAgeOfMaturity = 100
         wPassionDelta = 0
         wBoredomDelta = 0
-        wClassifier = buildClassifier ec wCSize 0.07 ImageTweaker
-        wCSize = 500
+        wClassifier = buildClassifier ec wCSize 0.03 ImageTweaker
+        wCSize = 1000
         wMuser = makeMuser [-1, -1, -1, -1] 1
         wIos = [doubleToPM1 reward, 0, 0, 0]
         wPredictor = buildPredictor ep (wCSize*11) 0.1
         wHappinessWeights = makeWeights [1, 0, 0, 0]
         -- The classifier does most of its learning by round 100.
-        ec = ExponentialParams 0.2 0.05
+        ec = ExponentialParams 0.1 0.005
         -- The predictor needs to keep learning longer.
         ep = ExponentialParams 0.1 0.005
         w = buildWainAndGenerateGenome wName wAppearance wBrain

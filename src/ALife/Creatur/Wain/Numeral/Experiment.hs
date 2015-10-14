@@ -69,13 +69,13 @@ import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
 import Data.Version (showVersion)
 import Data.Word (Word16)
-import Paths_numeral_wains (version)
+import Paths_exp_image_id_wains (version)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName)
 
 versionInfo :: String
 versionInfo
-  = "numeral-wains-" ++ showVersion version
+  = "exp-image-id-wains-" ++ showVersion version
       ++ ", compiled with " ++ W.packageVersion
       ++ ", " ++ ALife.Creatur.programVersion
 

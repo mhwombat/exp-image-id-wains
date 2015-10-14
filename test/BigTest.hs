@@ -165,7 +165,8 @@ trial xs ys p = do
   -- let wTrained = foldl' trainOne w xs
   let wTrained = foldl' imprintOne w xs
   k <- foldM (testOne (reportNovelty p) wTrained) 0 ys
-  putStrLn $ show k ++ ", " ++ show p ++ ", " ++ show (stats wTrained)
+  let fractionCorrect = fromIntegral k / fromIntegral (nTestImages p) :: Double
+  putStrLn $ show fractionCorrect ++ ", " ++ show k ++ ", " ++ show p ++ ", " ++ show (stats wTrained)
     ++ " " ++ versionInfo
   writeWain wTrained
 

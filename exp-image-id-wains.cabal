@@ -1,5 +1,5 @@
-name:                numeral-wains
-version:             2.15
+name:                exp-image-id-wains
+version:             2.16
 synopsis:            ALife agent that maps images to numerals.
 description:         ALife agent that maps images to numerals.
 homepage:            https://github.com/mhwombat/numeral-wains
@@ -12,16 +12,7 @@ category:            Data
 build-type:          Simple
 cabal-version:       >=1.8
 
-source-repository head
-  type:     git
-  location: https://github.com/mhwombat/numeral-wains.git
-
-source-repository this
-  type:     git
-  location: https://github.com/mhwombat/numeral-wains.git
-  tag:      2.15
-
-executable mnist-daemon
+executable exp-image-id-wains-daemon
   main-is:          ALife/Creatur/Wain/Numeral/Daemon.hs
   ghc-options:      -Wall -Werror -O2 -rtsopts -threaded
   build-depends:
@@ -57,7 +48,7 @@ executable mnist-daemon
                     zlib ==0.6.*
   hs-source-dirs:   src
 
-executable mnist-init
+executable exp-image-id-wains-init
   main-is:          ALife/Creatur/Wain/Numeral/GeneratePopulation.hs
   ghc-options:      -Wall -Werror -O2 -rtsopts -threaded
   build-depends:
@@ -91,7 +82,7 @@ executable mnist-init
                     zlib ==0.6.*
   hs-source-dirs:   src
 
-executable mnist-examine
+executable exp-image-id-wains-examine
   main-is:          ALife/Creatur/Wain/Numeral/ExamineAgent.hs
   ghc-options:      -Wall -Werror
   build-depends:
@@ -125,7 +116,7 @@ executable mnist-examine
                     zlib ==0.6.*
   hs-source-dirs:   src
 
-Test-suite mnist-tests
+Test-suite exp-image-id-wains-tests
   Type:             exitcode-stdio-1.0
   Main-is:          Main.hs
   GHC-Options:      -Wall -fno-warn-orphans
@@ -162,7 +153,7 @@ Test-suite mnist-tests
                     QuickCheck ==2.8.*
   Other-modules:    ALife.Creatur.Wain.Numeral.ActionQC
 
-executable mnist-learning-test
+executable exp-image-id-wains-learning-test
   main-is:          LearningTest.hs
   ghc-options:      -Wall -Werror
   build-depends:
@@ -196,7 +187,7 @@ executable mnist-learning-test
                     zlib ==0.6.*
   hs-source-dirs:   src, test
 
-executable mnist-teaching-test
+executable exp-image-id-wains-teaching-test
   main-is:          TeachingTest.hs
   ghc-options:      -Wall -Werror
   build-depends:
@@ -230,7 +221,7 @@ executable mnist-teaching-test
                     zlib ==0.6.*
   hs-source-dirs:   src, test
 
-executable mnist-big-test
+executable exp-image-id-wains-big-test
   main-is:          BigTest.hs
   ghc-options:      -Wall -Werror
   build-depends:
@@ -264,7 +255,7 @@ executable mnist-big-test
                     zlib ==0.6.*
   hs-source-dirs:   src, test
 
-executable mnist-diff-analysis
+executable exp-image-id-wains-diff-analysis
   main-is:          DiffAnalysis.hs
   ghc-options:      -Wall -Werror
   build-depends:

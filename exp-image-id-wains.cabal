@@ -1,5 +1,5 @@
 name:                exp-image-id-wains
-version:             2.16
+version:             2.17
 synopsis:            ALife agent that maps images to numerals.
 description:         ALife agent that maps images to numerals.
 homepage:            https://github.com/mhwombat/numeral-wains
@@ -27,7 +27,7 @@ executable exp-image-id-wains-daemon
                     containers ==0.5.*,
                     creatur ==5.9.*,
                     creatur-image-wains ==1.1.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     hdaemonize ==0.5.*,
@@ -63,7 +63,7 @@ executable exp-image-id-wains-init
                     containers ==0.5.*,
                     creatur ==5.9.*,
                     creatur-image-wains ==1.1.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -97,7 +97,7 @@ executable exp-image-id-wains-examine
                     containers ==0.5.*,
                     creatur ==5.9.*,
                     creatur-image-wains ==1.1.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -133,7 +133,7 @@ Test-suite exp-image-id-wains-tests
                     containers ==0.5.*,
                     creatur ==5.9.*,
                     creatur-image-wains ==1.1.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     creatur-wains-test-utils ==0.1.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
@@ -168,7 +168,7 @@ executable exp-image-id-wains-learning-test
                     containers ==0.5.*,
                     creatur ==5.9.*,
                     creatur-image-wains ==1.1.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -202,7 +202,7 @@ executable exp-image-id-wains-teaching-test
                     containers ==0.5.*,
                     creatur ==5.9.*,
                     creatur-image-wains ==1.1.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -236,7 +236,7 @@ executable exp-image-id-wains-ronan-test
                     containers ==0.5.*,
                     creatur ==5.9.*,
                     creatur-image-wains ==1.1.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -270,7 +270,7 @@ executable exp-image-id-wains-big-test
                     containers ==0.5.*,
                     creatur ==5.9.*,
                     creatur-image-wains ==1.1.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -295,7 +295,7 @@ executable exp-image-id-wains-diff-analysis
   build-depends:
                     base >=4.8 && <5,
                     creatur ==5.9.*,
-                    creatur-wains ==7.10.*,
+                    creatur-wains ==7.11.*,
                     creatur-image-wains ==1.1.*,
                     MonadRandom ==0.4.*,
                     directory ==1.2.*,

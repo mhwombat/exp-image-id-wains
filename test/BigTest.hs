@@ -18,7 +18,7 @@ import ALife.Creatur.Wain
 import ALife.Creatur.Wain.Classifier (buildClassifier)
 import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
   makeBrain)
-import ALife.Creatur.Wain.GeneticSOMInternal (ExponentialParams(..),
+import ALife.Creatur.Wain.GeneticSOMInternal (LearningParams(..),
   modelMap, Difference)
 import ALife.Creatur.Wain.Image
 import ALife.Creatur.Wain.Muser (makeMuser)
@@ -68,11 +68,13 @@ data Params = Params
     trainingDir :: FilePath,
     testDir :: FilePath,
     cr0 :: UIDouble,
-    cDecay :: UIDouble,
+    crf :: UIDouble,
+    ctf :: Word16,
     cdt :: UIDouble,
     cSize :: Word16,
     pr0 :: UIDouble,
-    pDecay :: UIDouble,
+    prf :: UIDouble,
+    ptf :: Word16,
     pdt :: UIDouble,
     defO :: [PM1Double],
     depth :: Word8
@@ -93,8 +95,8 @@ testWain p = w'
         wPredictorSize = cSize p * fromIntegral numActions
         wPredictor = buildPredictor ep wPredictorSize (pdt p)
         wHappinessWeights = makeWeights [1, 0, 0, 0]
-        ec = ExponentialParams (cr0 p) (cDecay p)
-        ep = ExponentialParams (pr0 p) (pDecay p)
+        ec = LearningParams (cr0 p) (crf p) (ctf p)
+        ep = LearningParams (pr0 p) (prf p) (ptf p)
         w = buildWainAndGenerateGenome wName wAppearance wBrain
               wDevotion wAgeOfMaturity wPassionDelta wBoredomDelta
         (w', _) = adjustEnergy 0.5 w
@@ -113,8 +115,9 @@ testWain p = w'
 --         (wainFinal, _) = adjustBoredom restorationBoredom wainPartiallyRestored
 
 imprintOne :: ImageWain -> Object Action -> ImageWain
-imprintOne w obj = imprint [objectAppearance obj] a w
-  where a = correctActions !! (objectNum obj)
+imprintOne w obj = w'
+  where (_, _, w') = imprint [objectAppearance obj] a w
+        a = correctActions !! (objectNum obj)
 
 testOne :: Bool -> ImageWain -> Int -> Object Action -> IO Int
 testOne rn w k obj = do

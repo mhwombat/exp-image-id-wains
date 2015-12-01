@@ -38,8 +38,8 @@ import ALife.Creatur.Wain.Checkpoint (enforceAll)
 import qualified ALife.Creatur.Wain.Classifier as Cl
 import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
-import ALife.Creatur.Wain.GeneticSOM (RandomExponentialParams(..),
-  randomExponential, schemaQuality)
+import ALife.Creatur.Wain.GeneticSOM (RandomLearningParams(..),
+  randomLearningFunction, schemaQuality)
 import qualified ALife.Creatur.Wain.Object as O
 import ALife.Creatur.Wain.Pretty (pretty)
 import ALife.Creatur.Wain.Raw (raw)
@@ -88,17 +88,19 @@ randomImageWain
 randomImageWain wName u classifierSize = do
   let w = view U.uImageWidth u
   let h = view U.uImageHeight u
-  let fcp = RandomExponentialParams
+  let fcp = RandomLearningParams
                { _r0Range = view U.uClassifierR0Range u,
-                 _dRange = view U.uClassifierDRange u }
-  fc <- randomExponential fcp
+                 _rfRange = view U.uClassifierRfRange u,
+                 _tfRange = view U.uClassifierTfRange u }
+  fc <- randomLearningFunction fcp
   classifierThreshold <- getRandomR (view U.uClassifierThresholdRange u)
   let c = Cl.buildClassifier fc classifierSize classifierThreshold
             ImageTweaker
-  let fdp = RandomExponentialParams
+  let fdp = RandomLearningParams
               { _r0Range = view U.uPredictorR0Range u,
-                _dRange = view U.uPredictorDRange u }
-  fd <- randomExponential fdp
+                _rfRange = view U.uPredictorRfRange u,
+                _tfRange = view U.uPredictorTfRange u }
+  fd <- randomLearningFunction fdp
   predictorThreshold <- getRandomR (view U.uPredictorThresholdRange u)
   let predictorSize = classifierSize * fromIntegral numActions
   let dr = buildPredictor fd predictorSize predictorThreshold
@@ -559,7 +561,7 @@ imprintCorrectAction = do
   let a = correctActions !! (O.objectNum obj)
   report $ "Teaching " ++ agentId w ++ " that correct action for "
     ++ O.objectId obj ++ " is " ++ show a
-  let w' = W.imprint [p] a w
+  let (_, _, w') = W.imprint [p] a w
   assign subject w' 
   
 writeRawStats

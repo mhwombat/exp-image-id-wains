@@ -56,8 +56,8 @@ runAction a obj w =
   where (wCorrect, _) = adjustEnergy reward w
         (wIncorrect, _) = adjustEnergy (-reward) w
 
-testWain :: UIDouble -> ImageWain
-testWain threshold = w'
+testWain :: UIDouble -> UIDouble -> UIDouble -> UIDouble -> UIDouble -> ImageWain
+testWain threshold r0c rfc r0p rfp = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
         Right wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 wIos
@@ -66,13 +66,13 @@ testWain threshold = w'
         wPassionDelta = 0
         wBoredomDelta = 0
         wClassifier = buildClassifier ec wCSize threshold ImageTweaker
-        wCSize = 1000
+        wCSize = 2000
         wMuser = makeMuser [-0.01, -0.01, -0.01, -0.01] 1
         wIos = [doubleToPM1 reward, 0, 0, 0]
         wPredictor = buildPredictor ep (wCSize*11) 0.1
         wHappinessWeights = makeWeights [1, 0, 0, 0]
-        ec = LearningParams 1 0.0001 60000
-        ep = LearningParams 1 0.0001 60000
+        ec = LearningParams r0c rfc 60000
+        ep = LearningParams r0p rfp 60000
         w = buildWainAndGenerateGenome wName wAppearance wBrain
               wDevotion wAgeOfMaturity wPassionDelta wBoredomDelta
         (w', _) = adjustEnergy 0.5 w
@@ -114,16 +114,11 @@ testOne w testStats obj = do
     ++ "," ++ show wasCorrect ++ "," ++ show novelty
   return $ (numeral, wasCorrect):testStats
 
-trainingDir :: String
-trainingDir = "/home/eamybut/mnist/trainingData/"
-
-testDir :: String
-testDir = "/home/eamybut/mnist/testData/"
-
 readDirAndShuffle :: FilePath -> IO [FilePath]
 readDirAndShuffle d = do
   let g = mkStdGen 263167 -- seed
-  files <- map (d ++) . drop 2 <$> getDirectoryContents d
+  let d2 = d ++ "/"
+  files <- map (d2 ++) . drop 2 <$> getDirectoryContents d
   return $ evalRand (shuffle files) g
 
 readSamples :: FilePath -> IO [Object Action]
@@ -158,15 +153,24 @@ countModelChanges modelCreationData = (numChanges, fraction)
 
 main :: IO ()
 main = do
-  threshold <- read . head <$> getArgs
-  putStrLn $ "trainingDir=" ++trainingDir
+  args <- getArgs
+  let trainingDir = head args
+  let testDir = args !! 1
+  let threshold = read $ args !! 2
+  let r0c = read $ args !! 3
+  let rfc = read $ args !! 4
+  let r0p = read $ args !! 5
+  let rfp = read $ args !! 6
+  let passes  = read $ args !! 7
+  putStrLn $ "trainingDir=" ++ trainingDir
   putStrLn $ "testDir=" ++ testDir
+  putStrLn $ "passes=" ++ show passes
   putStrLn "====="
   putStrLn "Training"
   putStrLn "====="
-  trainingSamples <- readSamples trainingDir
+  trainingSamples <- concat . replicate passes <$> readSamples trainingDir
   putStrLn "filename,numeral,label"
-  (trainedWain, modelCreationData) <- foldM trainOne (testWain threshold, empty) trainingSamples
+  (trainedWain, modelCreationData) <- foldM trainOne (testWain threshold r0c rfc r0p rfp, empty) trainingSamples
   putStrLn $ "stats=" ++ show (stats trainedWain)
   putStrLn ""
   -- putStrLn "====="

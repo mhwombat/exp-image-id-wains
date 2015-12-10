@@ -19,6 +19,7 @@ import ALife.Creatur.Wain.BrainInternal (makeBrain)
 import ALife.Creatur.Wain.Classifier (buildClassifier)
 import ALife.Creatur.Wain.GeneticSOMInternal (LearningParams(..))
 import ALife.Creatur.Wain.Image
+import qualified ALife.Creatur.Wain.ImageWain as IW
 import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
   correctActions, numeralFor)
@@ -173,16 +174,16 @@ main = do
   (trainedWain, modelCreationData) <- foldM trainOne (testWain threshold r0c rfc r0p rfp, empty) trainingSamples
   putStrLn $ "stats=" ++ show (stats trainedWain)
   putStrLn ""
-  -- putStrLn "====="
-  -- putHtmlLn "Classifier models after training"
-  -- putStrLn "====="
-  -- mapM_ putHtml $ IW.describeClassifierModels trainedWain
-  -- putHtmlLn ""
-  -- putStrLn "====="
-  -- putHtmlLn "Prediction models after training"
-  -- putStrLn "====="
-  -- mapM_ putHtmlLn $ IW.describePredictorModels trainedWain
-  -- putHtmlLn ""
+  putStrLn "====="
+  putStrLn "Classifier models after training"
+  putStrLn "====="
+  mapM_ putStr $ IW.describeClassifierModels trainedWain
+  putStrLn ""
+  putStrLn "====="
+  putStrLn "Prediction models after training"
+  putStrLn "====="
+  mapM_ putStrLn $ IW.describePredictorModels trainedWain
+  putStrLn ""
   putStrLn "====="
   putStrLn "Testing"
   putStrLn "====="

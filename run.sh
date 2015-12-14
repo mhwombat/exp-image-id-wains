@@ -2,6 +2,8 @@
 
 trainingDir=$HOME/mnist/trainingData
 testDir=$HOME/mnist/testData
+#trainingDir=$HOME/mnist/smallSet
+#testDir=$HOME/mnist/smallSet
 
 function runit {
   echo $*
@@ -12,4 +14,5 @@ function runit {
 #runit 0.11 0.1 0.001 0.1 0.001 1
 #runit 0.12 0.1 0.001 0.1 0.001 1
 #runit 0.13 0.1 0.001 0.1 0.001 1
-runit 0.12 1 0.000000000000000001 0.1 0.001 1
+#runit 0.12 1 0.000000000000000001 1 0.000000000000000001 1
+runit 0.12 1 0.000000000000000001 0.1 0.000000000000000001 1

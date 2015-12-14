@@ -47,7 +47,7 @@ import System.FilePath.Posix (takeFileName)
 type Numeral = Char
 
 reward :: Double
-reward = 0.1
+reward = 1
 
 runAction :: Action -> Object Action -> ImageWain -> ImageWain
 runAction a obj w =
@@ -96,6 +96,13 @@ trainOne (w, modelCreationData) obj = do
   let bmu = head . fst $ maximumBy (comparing snd) sps
   putStrLn $ objectId obj ++ "," ++ numeral : "," ++ show bmu
   let modelCreationData' = updateModelCreationData bmu numeral modelCreationData
+  -- let originalNumeral = snd $ modelCreationData' ! bmu
+  -- -- putStrLn $ "DEBUG: " ++ show bmu ++ " " ++ show (modelCreationData' ! bmu)
+  -- when (numeral /= originalNumeral) $
+  --   putStrLn $ "Model " ++ show bmu ++ " was created for numeral "
+  --     ++ show originalNumeral
+  --     ++ " but is now being used for numeral " ++ show numeral
+  -- mapM_ putStrLn $ IW.describePredictorModels w'
   return (w', modelCreationData')
 
 testOne :: ImageWain -> [(Numeral, Bool)] -> Object Action -> IO [(Numeral, Bool)]
@@ -119,7 +126,7 @@ readDirAndShuffle :: FilePath -> IO [FilePath]
 readDirAndShuffle d = do
   let g = mkStdGen 263167 -- seed
   let d2 = d ++ "/"
-  files <- map (d2 ++) . drop 2 <$> getDirectoryContents d
+  files <- map (d2 ++) . filter (\s -> head s /= '.') <$> getDirectoryContents d
   return $ evalRand (shuffle files) g
 
 readSamples :: FilePath -> IO [Object Action]

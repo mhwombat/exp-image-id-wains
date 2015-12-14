@@ -161,6 +161,7 @@ countModelChanges modelCreationData = (numChanges, fraction)
 
 main :: IO ()
 main = do
+  putStrLn versionInfo
   args <- getArgs
   let trainingDir = head args
   let testDir = args !! 1

@@ -68,7 +68,7 @@ import Control.Monad.State.Lazy (StateT, execStateT, evalStateT, get)
 import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
 import Data.Version (showVersion)
-import Data.Word (Word16)
+import Data.Word (Word64)
 import Paths_exp_image_id_wains (version)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath (dropFileName)
@@ -84,7 +84,7 @@ type Object = O.Object Action
 
 randomImageWain
   :: RandomGen r
-    => String -> U.Universe ImageWain -> Word16 -> Rand r ImageWain
+    => String -> U.Universe ImageWain -> Word64 -> Rand r ImageWain
 randomImageWain wName u classifierSize = do
   let w = view U.uImageWidth u
   let h = view U.uImageHeight u

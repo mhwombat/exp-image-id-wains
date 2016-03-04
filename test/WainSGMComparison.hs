@@ -44,9 +44,14 @@ import Data.List.Split (chunksOf)
 import qualified Data.Map.Lazy as M
 import Data.Map.Lazy (Map, insertWith, elems, empty, size)
 import Data.Ord (comparing)
+import Data.Word (Word64)
 import System.Directory
 import System.Environment (getArgs)
 import System.FilePath.Posix (takeFileName)
+
+-- import Data.ByteString as BS (readFile, writeFile)
+-- import qualified Data.Serialize as DS 
+--   (Serialize, decode, encode)
 
 type Numeral = Char
 
@@ -61,7 +66,7 @@ runAction a obj w =
   where (wCorrect, _) = adjustEnergy reward w
         (wIncorrect, _) = adjustEnergy (-reward) w
 
-type ImageSGM = S.SGM Int UIDouble Label Image
+type ImageSGM = S.SGM Word64 UIDouble Label Image
 
 putImageGrid :: Int -> [Image] -> IO ()
 putImageGrid n xs = mapM_ putImageRow (chunksOf n xs)
@@ -113,29 +118,70 @@ trainOne (w, modelCreationData, sgm) obj = do
   putStrLn $ "-----"
   putStrLn $ "Wain time: " ++ show (S.time . view (brain . classifier . patternMap) $ w)
   putStrLn $ "SGM time: " ++ show (S.time sgm)
-  putStrLn $ "Wain learning rate: " ++ show (currentLearningRate . view (brain . classifier) $ w)
-  putStrLn $ "SGM learning rate: " ++ show ((S.learningRate sgm) (S.time sgm))
+  let wainRate = currentLearningRate . view (brain . classifier) $ w
+  putStrLn $ "Wain learning rate: " ++ show wainRate
+  let sgmRate = (S.learningRate sgm) (S.time sgm)
+  putStrLn $ "SGM learning rate: " ++ show sgmRate
   let numeral = head . show $ objectNum obj
   let a = correctActions !! objectNum obj
   putStrLn $ "Teaching " ++ agentId w ++ " that correct action for "
     ++ objectId obj ++ " is " ++ show a
   let (lds, sps, w') = imprint [objectAppearance obj] a w
-  let bmu = head . fst $ maximumBy (comparing snd) sps
+  -- let bmu = head . fst $ maximumBy (comparing snd) sps
+  let bmu = head . fst . maximumBy (comparing snd) . reverse $ sps
   let (sgmBMU, _, sgmLDS, sgm')  = S.trainAndClassify sgm (objectAppearance obj)
-  putStrLn $ "Wain diffs" ++ show lds
-  putStrLn $ " SGM diffs" ++ show sgmLDS
   putStrLn $ "Wain: " ++ objectId obj ++ "," ++ numeral : "," ++ show bmu
-  putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+  let wainModel = (modelMap . view (brain . classifier) $ w') M.! bmu
+  putStrLn . imageToHtml $ wainModel
+  -- putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
   putStrLn $ "SGM:  " ++ objectId obj ++ "," ++ numeral : "," ++ show sgmBMU
-  putImageGrid 10 (M.elems . S.modelMap $ sgm')
-  if sgmBMU == bmu
+  let sgmModel = (S.modelMap sgm') M.! sgmBMU
+  putStrLn . imageToHtml $ sgmModel
+  -- putImageGrid 10 (M.elems . S.modelMap $ sgm')
+  if wainRate == sgmRate
     then return ()
     else do
+        putStrLn $ "Wain diffs" ++ show lds
+        putStrLn $ " SGM diffs" ++ show sgmLDS
         putStrLn "Wain models:"
         putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
         putStrLn "SGM models:"
         putImageGrid 10 (M.elems . S.modelMap $ sgm')
-        error "found a difference"
+        -- BS.writeFile "amy.dat" $ DS.encode (w, w', sgm, sgm')
+        error "different learning rates"
+  if head lds == sgmLDS
+    then return ()
+    else do
+        putStrLn $ "Wain diffs" ++ show lds
+        putStrLn $ " SGM diffs" ++ show sgmLDS
+        putStrLn "Wain models:"
+        putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+        putStrLn "SGM models:"
+        putImageGrid 10 (M.elems . S.modelMap $ sgm')
+        -- BS.writeFile "amy.dat" $ DS.encode (w, w', sgm, sgm')
+        error "different diffs"
+  if wainModel == sgmModel
+    then return ()
+    else do
+        putStrLn $ "Wain diffs" ++ show lds
+        putStrLn $ " SGM diffs" ++ show sgmLDS
+        putStrLn "Wain models:"
+        putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+        putStrLn "SGM models:"
+        putImageGrid 10 (M.elems . S.modelMap $ sgm')
+        -- BS.writeFile "amy.dat" $ DS.encode (w, w', sgm, sgm')
+        error "different models"
+  if sgmBMU == bmu
+    then return ()
+    else do
+        putStrLn $ "Wain diffs" ++ show lds
+        putStrLn $ " SGM diffs" ++ show sgmLDS
+        putStrLn "Wain models:"
+        putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+        putStrLn "SGM models:"
+        putImageGrid 10 (M.elems . S.modelMap $ sgm')
+        -- BS.writeFile "amy.dat" $ DS.encode (w, w', sgm, sgm')
+        error "different BMUs"
   let modelCreationData' = updateModelCreationData bmu numeral modelCreationData
   return (w', modelCreationData', sgm')
 
@@ -212,7 +258,9 @@ main = do
   putStrLn "====="
   trainingSamples <- concat . replicate passes <$> readSamples trainingDir
   putStrLn "filename,numeral,label"
-  (trainedWain, modelCreationData, _) <- foldM trainOne (testWain threshold r0c rfc r0p rfp, empty, testSGM threshold r0c rfc) trainingSamples
+  let w = testWain threshold r0c rfc r0p rfp
+  let s = view (brain . classifier . patternMap) w
+  (trainedWain, modelCreationData, _) <- foldM trainOne (w, empty, s) trainingSamples
   putStrLn $ "stats=" ++ show (stats trainedWain)
   putStrLn ""
   putStrLn "====="

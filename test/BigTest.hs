@@ -42,7 +42,7 @@ import qualified Data.Map.Strict as M
 import Data.List (minimumBy, foldl')
 import Data.Ord (comparing)
 import qualified Data.Serialize as DS (decode, encode)
-import Data.Word (Word8, Word16)
+import Data.Word (Word8, Word64)
 import System.Directory
 import System.FilePath.Posix (takeFileName)
 import System.Environment (getArgs)
@@ -69,12 +69,12 @@ data Params = Params
     testDir :: FilePath,
     cr0 :: UIDouble,
     crf :: UIDouble,
-    ctf :: Word16,
+    ctf :: Word64,
     cdt :: UIDouble,
-    cSize :: Word16,
+    cSize :: Word64,
     pr0 :: UIDouble,
     prf :: UIDouble,
-    ptf :: Word16,
+    ptf :: Word64,
     pdt :: UIDouble,
     defO :: [PM1Double],
     depth :: Word8

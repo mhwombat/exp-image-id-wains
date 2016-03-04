@@ -96,7 +96,7 @@ import Control.Exception (SomeException, try)
 import Control.Lens hiding (Setting)
 import Data.AppSettings (Setting(..), GetSetting(..),
   FileLocation(Path), readSettings)
-import Data.Word (Word8, Word16)
+import Data.Word (Word8, Word16, Word64)
 import System.Directory (makeRelativeToCurrentDirectory)
 
 data Universe a = Universe
@@ -116,8 +116,8 @@ data Universe a = Universe
     _uImageDB :: ImageDB,
     _uImageWidth :: Int,
     _uImageHeight :: Int,
-    _uClassifierSizeRange :: (Word16, Word16),
-    _uPredictorSizeRange :: (Word16, Word16),
+    _uClassifierSizeRange :: (Word64, Word64),
+    _uPredictorSizeRange :: (Word64, Word64),
     _uDevotionRange :: (UIDouble, UIDouble),
     _uMaturityRange :: (Word16, Word16),
     _uMaxAge :: Int,
@@ -136,11 +136,11 @@ data Universe a = Universe
     _uClassifierThresholdRange :: (UIDouble, UIDouble),
     _uClassifierR0Range :: (UIDouble, UIDouble),
     _uClassifierRfRange :: (UIDouble, UIDouble),
-    _uClassifierTfRange :: (Word16, Word16),
+    _uClassifierTfRange :: (Word64, Word64),
     _uPredictorThresholdRange :: (UIDouble, UIDouble),
     _uPredictorR0Range :: (UIDouble, UIDouble),
     _uPredictorRfRange :: (UIDouble, UIDouble),
-    _uPredictorTfRange :: (Word16, Word16),
+    _uPredictorTfRange :: (Word64, Word64),
     _uDefaultOutcomeRange :: (PM1Double, PM1Double),
     _uImprintOutcomeRange :: (PM1Double, PM1Double),
     _uDepthRange :: (Word8, Word8),
@@ -202,11 +202,11 @@ cImageWidth = requiredSetting "imageWidth"
 cImageHeight :: Setting Int
 cImageHeight = requiredSetting "imageHeight"
 
-cClassifierSizeRange :: Setting (Word16, Word16)
+cClassifierSizeRange :: Setting (Word64, Word64)
 cClassifierSizeRange
   = requiredSetting "classifierSizeRange"
 
-cPredictorSizeRange :: Setting (Word16, Word16)
+cPredictorSizeRange :: Setting (Word64, Word64)
 cPredictorSizeRange
   = requiredSetting "predictorSizeRange"
 
@@ -259,7 +259,7 @@ cClassifierR0Range = requiredSetting "classifierR0Range"
 cClassifierRfRange :: Setting (UIDouble, UIDouble)
 cClassifierRfRange = requiredSetting "classifierRfRange"
 
-cClassifierTfRange :: Setting (Word16, Word16)
+cClassifierTfRange :: Setting (Word64, Word64)
 cClassifierTfRange = requiredSetting "classifierTfRange"
 
 cPredictorThresholdRange :: Setting (UIDouble, UIDouble)
@@ -271,7 +271,7 @@ cPredictorR0Range = requiredSetting "predictorR0Range"
 cPredictorRfRange :: Setting (UIDouble, UIDouble)
 cPredictorRfRange = requiredSetting "predictorRfRange"
 
-cPredictorTfRange :: Setting (Word16, Word16)
+cPredictorTfRange :: Setting (Word64, Word64)
 cPredictorTfRange = requiredSetting "predictorTfRange"
 
 cDefaultOutcomeRange :: Setting (PM1Double, PM1Double)

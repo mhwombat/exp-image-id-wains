@@ -30,6 +30,7 @@ module ALife.Creatur.Wain.Numeral.Experiment
   ) where
 
 import ALife.Creatur (agentId, isAlive, programVersion)
+import ALife.Creatur.Persistent (putPS, getPS)
 import ALife.Creatur.Task (checkPopSize)
 import qualified ALife.Creatur.Wain as W
 import ALife.Creatur.Wain.Brain (makeBrain, scenarioReport,
@@ -53,7 +54,6 @@ import ALife.Creatur.Wain.ImageTweaker (ImageTweaker(..))
 import ALife.Creatur.Wain.ImageDB (ImageDB, anyImage)
 import qualified ALife.Creatur.Wain.ImageWain as IW
 import qualified ALife.Creatur.Wain.Numeral.Universe as U
-import ALife.Creatur.Persistent (putPS, getPS)
 import ALife.Creatur.Wain.PersistentStatistics (updateStats, readStats,
   clearStats)
 import ALife.Creatur.Wain.Statistics (summarise)
@@ -76,7 +76,8 @@ import System.FilePath (dropFileName)
 versionInfo :: String
 versionInfo
   = "exp-image-id-wains-" ++ showVersion version
-      ++ ", compiled with " ++ W.packageVersion
+      ++ ", compiled with " ++ IW.packageVersion
+      ++ ", " ++ W.packageVersion
       ++ ", " ++ ALife.Creatur.programVersion
 
 type ImageWain = IW.ImageWain Action
@@ -112,7 +113,8 @@ randomImageWain wName u classifierSize = do
   let mr = makeMuser dOut dp
   t <- getRandom
   ios <- take 4 <$> getRandomRs (view U.uImprintOutcomeRange u)
-  let (Right wBrain) = makeBrain c mr dr hw t ios
+  rds <- take 4 <$> getRandomRs (view U.uReinforcementDeltasRange u)
+  let (Right wBrain) = makeBrain c mr dr hw t ios rds
   wDevotion <- getRandomR . view U.uDevotionRange $ u
   wAgeOfMaturity <- getRandomR . view U.uMaturityRange $ u
   wPassionDelta <- getRandomR . view U.uBoredomDeltaRange $ u

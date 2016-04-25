@@ -84,7 +84,7 @@ testWain :: Params -> ImageWain
 testWain p = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
-        (Right wBrain) = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 wIos
+        (Right wBrain) = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 wIos wRds
         wDevotion = 0.1
         wAgeOfMaturity = 100
         wPassionDelta = 0
@@ -92,6 +92,7 @@ testWain p = w'
         wClassifier = buildClassifier ec (cSize p) (cdt p) ImageTweaker
         wMuser = makeMuser (defO p) (depth p)
         wIos = [doubleToPM1 reward, 0, 0, 0]
+        wRds = [0.1, 0, 0, 0]
         wPredictorSize = cSize p * fromIntegral numActions
         wPredictor = buildPredictor ep wPredictorSize (pdt p)
         wHappinessWeights = makeWeights [1, 0, 0, 0]

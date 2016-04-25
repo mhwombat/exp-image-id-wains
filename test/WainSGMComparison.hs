@@ -88,7 +88,7 @@ testWain :: UIDouble -> UIDouble -> UIDouble -> UIDouble -> UIDouble -> ImageWai
 testWain threshold r0c rfc r0p rfp = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
-        Right wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 wIos
+        Right wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 wIos wRds
         wDevotion = 0.1
         wAgeOfMaturity = 100
         wPassionDelta = 0
@@ -97,6 +97,7 @@ testWain threshold r0c rfc r0p rfp = w'
         wCSize = 2000
         wMuser = makeMuser [-0.01, -0.01, -0.01, -0.01] 1
         wIos = [doubleToPM1 reward, 0, 0, 0]
+        wRds = [0.1, 0, 0, 0]
         wPredictor = buildPredictor ep (wCSize*11) 0.1
         wHappinessWeights = makeWeights [1, 0, 0, 0]
         ec = LearningParams r0c rfc 60000

@@ -1,13 +1,13 @@
 ------------------------------------------------------------------------
 -- |
--- Module      :  SingleWain
+-- Module      :  WainSGMComparison
 -- Copyright   :  (c) Amy de Buitléir 2015
 -- License     :  BSD-style
 -- Maintainer  :  amy@nualeargais.ie
 -- Stability   :  experimental
 -- Portability :  portable
 --
--- Imprint some image samples, then test on the rest.
+-- Compare wain with similarly-configured SOM.
 -- No learning occurs after the imprint (training) phase.
 --
 ------------------------------------------------------------------------
@@ -15,9 +15,10 @@ module Main where
 
 import ALife.Creatur (agentId)
 import ALife.Creatur.Wain
-import ALife.Creatur.Wain.BrainInternal (makeBrain)
+import ALife.Creatur.Wain.BrainInternal (makeBrain, classifier)
 import ALife.Creatur.Wain.Classifier (buildClassifier)
-import ALife.Creatur.Wain.GeneticSOMInternal (LearningParams(..))
+import ALife.Creatur.Wain.GeneticSOMInternal (LearningParams(..),
+  modelMap, currentLearningRate, patternMap)
 import ALife.Creatur.Wain.Image
 import qualified ALife.Creatur.Wain.ImageWain as IW
 import ALife.Creatur.Wain.Muser (makeMuser)
@@ -30,24 +31,31 @@ import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
 import ALife.Creatur.Wain.Response (action)
 import ALife.Creatur.Wain.Statistics (stats)
-import ALife.Creatur.Wain.UnitInterval (UIDouble)
+import ALife.Creatur.Wain.UnitInterval (UIDouble, doubleToUI)
 import ALife.Creatur.Wain.Weights (makeWeights)
 import ALife.Creatur.Util (shuffle)
 import Control.Lens
 import Control.Monad (foldM)
 import Control.Monad.Random (evalRand, mkStdGen)
+import qualified Data.Datamining.Clustering.SGM as S
 import Data.Function (on)
 import Data.List (sortBy, groupBy, maximumBy)
+import Data.List.Split (chunksOf)
+import qualified Data.Map.Lazy as M
 import Data.Map.Lazy (Map, insertWith, elems, empty, size)
 import Data.Ord (comparing)
+import Data.Word (Word64)
 import System.Directory
 import System.Environment (getArgs)
 import System.FilePath.Posix (takeFileName)
 
+import qualified Data.ByteString as BS
+import qualified Data.Serialize as DS 
+
 type Numeral = Char
 
 reward :: Double
-reward = 1
+reward = 0.1
 
 runAction :: Action -> Object Action -> ImageWain -> ImageWain
 runAction a obj w =
@@ -56,6 +64,24 @@ runAction a obj w =
     else wIncorrect
   where (wCorrect, _) = adjustEnergy reward w
         (wIncorrect, _) = adjustEnergy (-reward) w
+
+type ImageSGM = S.SGM Word64 UIDouble Label Image
+
+putImageGrid :: Int -> [Image] -> IO ()
+putImageGrid n xs = mapM_ putImageRow (chunksOf n xs)
+
+putImageRow :: [Image] -> IO ()
+putImageRow xs = mapM_ (putStr . imageToHtml) xs >> putStrLn ""
+
+imageToHtml :: Image -> String
+imageToHtml x = "<img src='data:image/png;base64," ++ base64encode x ++ "'/>"
+
+testSGM :: UIDouble -> UIDouble -> UIDouble -> ImageSGM
+testSGM threshold r0 rf
+  = S.makeSGM sgmLearningFunction wCSize threshold False imageDiff makeImageSimilar
+  where wCSize = 2000
+        sgmLearningFunction t = r0 * ((rf/r0)**a)
+          where a = doubleToUI $ fromIntegral t / 60000
 
 testWain :: UIDouble -> UIDouble -> UIDouble -> UIDouble -> UIDouble -> ImageWain
 testWain threshold r0c rfc r0p rfp = w'
@@ -89,22 +115,92 @@ updateModelCreationData bmu numeral modelCreationData =
 
 trainOne :: (ImageWain, ModelCreationData) -> Object Action -> IO (ImageWain, ModelCreationData)
 trainOne (w, modelCreationData) obj = do
+  putStrLn $ "-----"
+  putStrLn $ "Wain time: " ++ show (S.time . view (brain . classifier . patternMap) $ w)
+  let sgm = view (brain . classifier . patternMap) w
+  putStrLn $ "SGM time: " ++ show (S.time sgm)
+  let wainRate = currentLearningRate . view (brain . classifier) $ w
+  putStrLn $ "Wain learning rate: " ++ show wainRate
+  let sgmRate = (S.learningRate sgm) (S.time sgm)
+  putStrLn $ "SGM learning rate: " ++ show sgmRate
   let numeral = head . show $ objectNum obj
   let a = correctActions !! objectNum obj
   putStrLn $ "Teaching " ++ agentId w ++ " that correct action for "
     ++ objectId obj ++ " is " ++ show a
-  let (_, sps, w') = imprint [objectAppearance obj] a w
-  let bmu = head . fst $ maximumBy (comparing snd) sps
-  putStrLn $ objectId obj ++ "," ++ numeral : "," ++ show bmu
+  let (lds, sps, w') = imprint [objectAppearance obj] a w
+  let bmu = head . fst . maximumBy (comparing snd) . reverse $ sps
+  let (sgmBMU, _, sgmLDS, sgm')  = S.trainAndClassify sgm (objectAppearance obj)
+  putStrLn $ "Wain: " ++ objectId obj ++ "," ++ numeral : "," ++ show bmu
+  let wainModel = (modelMap . view (brain . classifier) $ w') M.! bmu
+  putStrLn . imageToHtml $ wainModel
+  -- putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+  putStrLn $ "SGM:  " ++ objectId obj ++ "," ++ numeral : "," ++ show sgmBMU
+  let sgmModel = (S.modelMap sgm') M.! sgmBMU
+  putStrLn . imageToHtml $ sgmModel
+  -- putImageGrid 10 (M.elems . S.modelMap $ sgm')
+  if wainRate == sgmRate
+    then return ()
+    else do
+        putStrLn $ "Wain diffs" ++ show lds
+        putStrLn $ " SGM diffs" ++ show sgmLDS
+        putStrLn "Wain models:"
+        putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+        putStrLn "SGM models:"
+        putImageGrid 10 (M.elems . S.modelMap $ sgm')
+        BS.writeFile "amy.dat" $ DS.encode (w, w')
+        error "different learning rates"
+  if head lds == sgmLDS
+    then return ()
+    else do
+        putStrLn $ "Wain diffs" ++ show lds
+        putStrLn $ " SGM diffs" ++ show sgmLDS
+        putStrLn "Wain models:"
+        putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+        putStrLn "SGM models:"
+        putImageGrid 10 (M.elems . S.modelMap $ sgm')
+        BS.writeFile "amy.dat" $ DS.encode (w, w')
+        error "different diffs"
+  if wainModel == sgmModel
+    then return ()
+    else do
+        putStrLn $ "Wain diffs" ++ show lds
+        putStrLn $ " SGM diffs" ++ show sgmLDS
+        putStrLn "Wain models:"
+        putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+        putStrLn "SGM models:"
+        putImageGrid 10 (M.elems . S.modelMap $ sgm')
+        BS.writeFile "amy.dat" $ DS.encode (w, w')
+        error "different models"
+  if sgmBMU == bmu
+    then return ()
+    else do
+        putStrLn $ "Wain diffs" ++ show lds
+        putStrLn $ " SGM diffs" ++ show sgmLDS
+        putStrLn "Wain models:"
+        putImageGrid 10 (M.elems . modelMap . view (brain . classifier) $ w')
+        putStrLn "SGM models:"
+        putImageGrid 10 (M.elems . S.modelMap $ sgm')
+        BS.writeFile "amy.dat" $ DS.encode (w, w')
+        error "different BMUs"
   let modelCreationData' = updateModelCreationData bmu numeral modelCreationData
-  -- let originalNumeral = snd $ modelCreationData' ! bmu
-  -- -- putStrLn $ "DEBUG: " ++ show bmu ++ " " ++ show (modelCreationData' ! bmu)
-  -- when (numeral /= originalNumeral) $
-  --   putStrLn $ "Model " ++ show bmu ++ " was created for numeral "
-  --     ++ show originalNumeral
-  --     ++ " but is now being used for numeral " ++ show numeral
-  -- mapM_ putStrLn $ IW.describePredictorModels w'
   return (w', modelCreationData')
+
+{-
+:l test/WainSGMComparison2.hs
+obj <- readOneSample "/home/amy/mnist/trainingData/5_33365.png"
+bs <- BS.readFile "amy.dat"
+let Right (w, w') = DS.decode bs :: Either String (ImageWain, ImageWain)
+let sgm = view (brain . classifier . patternMap) w
+let numeral = head . show $ objectNum obj
+let a = correctActions !! objectNum obj
+let (lds, sps, w') = imprint [objectAppearance obj] a w
+let (sgmBMU, _, sgmLDS, sgm')  = S.trainAndClassify sgm (objectAppearance obj)
+
+let wainModels = modelMap . view (brain . classifier) $ w'
+let sgmModels = S.modelMap sgm'
+
+-}
+
 
 testOne :: ImageWain -> [(Numeral, Bool)] -> Object Action -> IO [(Numeral, Bool)]
 testOne w testStats obj = do
@@ -127,7 +223,7 @@ readDirAndShuffle :: FilePath -> IO [FilePath]
 readDirAndShuffle d = do
   let g = mkStdGen 263167 -- seed
   let d2 = d ++ "/"
-  files <- map (d2 ++) . filter (\s -> head s /= '.') <$> getDirectoryContents d
+  files <- map (d2 ++) . drop 2 <$> getDirectoryContents d
   return $ evalRand (shuffle files) g
 
 readSamples :: FilePath -> IO [Object Action]
@@ -162,7 +258,6 @@ countModelChanges modelCreationData = (numChanges, fraction)
 
 main :: IO ()
 main = do
-  putStrLn versionInfo
   args <- getArgs
   let trainingDir = head args
   let testDir = args !! 1
@@ -180,7 +275,8 @@ main = do
   putStrLn "====="
   trainingSamples <- concat . replicate passes <$> readSamples trainingDir
   putStrLn "filename,numeral,label"
-  (trainedWain, modelCreationData) <- foldM trainOne (testWain threshold r0c rfc r0p rfp, empty) trainingSamples
+  let w = testWain threshold r0c rfc r0p rfp
+  (trainedWain, modelCreationData) <- foldM trainOne (w, empty) trainingSamples
   putStrLn $ "stats=" ++ show (stats trainedWain)
   putStrLn ""
   putStrLn "====="

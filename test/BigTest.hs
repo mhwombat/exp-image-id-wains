@@ -117,7 +117,7 @@ testWain p = w'
 
 imprintOne :: ImageWain -> Object Action -> ImageWain
 imprintOne w obj = w'
-  where (_, _, w') = imprint [objectAppearance obj] a w
+  where (_, _, _, _, w') = imprint [objectAppearance obj] a w
         a = correctActions !! (objectNum obj)
 
 testOne :: Bool -> ImageWain -> Int -> Object Action -> IO Int

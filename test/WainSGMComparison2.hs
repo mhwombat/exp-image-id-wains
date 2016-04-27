@@ -127,7 +127,7 @@ trainOne (w, modelCreationData) obj = do
   let a = correctActions !! objectNum obj
   putStrLn $ "Teaching " ++ agentId w ++ " that correct action for "
     ++ objectId obj ++ " is " ++ show a
-  let (lds, sps, w') = imprint [objectAppearance obj] a w
+  let (lds, sps, _, _, w') = imprint [objectAppearance obj] a w
   let bmu = head . fst . maximumBy (comparing snd) . reverse $ sps
   let (sgmBMU, _, sgmLDS, sgm')  = S.trainAndClassify sgm (objectAppearance obj)
   putStrLn $ "Wain: " ++ objectId obj ++ "," ++ numeral : "," ++ show bmu

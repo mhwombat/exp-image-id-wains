@@ -86,7 +86,7 @@ imprintOne w obj = do
   let a = correctActions !! (objectNum obj)
   putHtmlLn $ "Teaching " ++ agentId w ++ " that correct action for "
     ++ objectId obj ++ " is " ++ show a
-  let (_, _, w') = imprint [objectAppearance obj] a w
+  let (_, _, _, _, w') = imprint [objectAppearance obj] a w
   return w'
 
 tryOne :: ImageWain -> Object Action -> IO (ImageWain)

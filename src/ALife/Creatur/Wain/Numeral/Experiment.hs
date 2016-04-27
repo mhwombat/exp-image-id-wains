@@ -563,7 +563,7 @@ imprintCorrectAction = do
   let a = correctActions !! (O.objectNum obj)
   report $ "Teaching " ++ agentId w ++ " that correct action for "
     ++ O.objectId obj ++ " is " ++ show a
-  let (_, _, w') = W.imprint [p] a w
+  let (_, _, _, _, w') = W.imprint [p] a w
   assign subject w' 
   
 writeRawStats

@@ -26,7 +26,7 @@ import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
 import ALife.Creatur.Wain.Numeral.Experiment
 import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
   objectAppearance)
-import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
+-- import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
 import ALife.Creatur.Wain.Response (action)
 import ALife.Creatur.Wain.Statistics (stats)
@@ -69,7 +69,7 @@ testWain threshold r0c rfc r0p rfp = w'
         wClassifier = buildClassifier ec wCSize threshold ImageTweaker
         wCSize = 2000
         wMuser = makeMuser [-0.01, -0.01, -0.01, -0.01] 1
-        wIos = [doubleToPM1 reward, 0, 0, 0]
+        wIos = [0.2, 0, 0, 0]
         wRds = [0.1, 0, 0, 0]
         wPredictor = buildPredictor ep (wCSize*11) 0.1
         wHappinessWeights = makeWeights [1, 0, 0, 0]
@@ -93,7 +93,16 @@ trainOne (w, modelCreationData) obj = do
   let a = correctActions !! objectNum obj
   putStrLn $ "Teaching " ++ agentId w ++ " that correct action for "
     ++ objectId obj ++ " is " ++ show a
-  let (_, sps, w') = imprint [objectAppearance obj] a w
+  -- putStrLn "Predictor models before"
+  -- mapM_ putStrLn $ IW.describePredictorModels w
+  let (_, sps, _, _, w') = imprint [objectAppearance obj] a w
+  -- putStrLn $ "lds=" ++ show lds
+  -- putStrLn $ "sps=" ++ show sps
+  -- putStrLn $ "pBMU=" ++ show pBMU
+  -- putStrLn $ "Wain is learning " ++ show r
+  -- putStrLn $ "predictor learning rate=" ++ show (currentLearningRate $ view (brain . predictor) w)
+  -- putStrLn "Predictor models after"
+  -- mapM_ putStrLn $ IW.describePredictorModels w'
   let bmu = head . fst $ maximumBy (comparing snd) sps
   putStrLn $ objectId obj ++ "," ++ numeral : "," ++ show bmu
   let modelCreationData' = updateModelCreationData bmu numeral modelCreationData
@@ -174,6 +183,11 @@ main = do
   let passes  = read $ args !! 7
   putStrLn $ "trainingDir=" ++ trainingDir
   putStrLn $ "testDir=" ++ testDir
+  putStrLn $ "r0c=" ++ show r0c
+  putStrLn $ "rfc=" ++ show rfc
+  putStrLn $ "threshold=" ++ show threshold
+  putStrLn $ "r0p=" ++ show r0p
+  putStrLn $ "rfp=" ++ show rfp
   putStrLn $ "passes=" ++ show passes
   putStrLn "====="
   putStrLn "Training"

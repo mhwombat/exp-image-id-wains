@@ -112,7 +112,7 @@ randomImageWain wName u classifierSize = do
   dp <- getRandomR $ view U.uDepthRange u
   let mr = makeMuser dOut dp
   t <- getRandom
-  s <- getRandomR (1, 255)
+  s <- getRandomR (view U.uStrictnessRange u)
   ios <- take 4 <$> getRandomRs (view U.uImprintOutcomeRange u)
   rds <- take 4 <$> getRandomRs (view U.uReinforcementDeltasRange u)
   let (Right wBrain) = makeBrain c mr dr hw t s ios rds

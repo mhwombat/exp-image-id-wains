@@ -1,5 +1,5 @@
 name:                exp-image-id-wains
-version:             2.19.1
+version:             2.19.2
 synopsis:            ALife agent that maps images to numerals.
 description:         ALife agent that maps images to numerals.
 homepage:            https://github.com/mhwombat/numeral-wains

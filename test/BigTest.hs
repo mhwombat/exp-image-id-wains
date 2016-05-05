@@ -84,7 +84,7 @@ testWain :: Params -> ImageWain
 testWain p = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
-        (Right wBrain) = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 32 wIos wRds
+        Right wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 32 wIos wRds
         wDevotion = 0.1
         wAgeOfMaturity = 100
         wPassionDelta = 0

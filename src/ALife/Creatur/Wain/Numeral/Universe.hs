@@ -39,7 +39,7 @@ module ALife.Creatur.Wain.Numeral.Universe
     uImageWidth,
     uImageHeight,
     uClassifierSizeRange,
-    uPredictorSizeRange,
+    -- uPredictorSizeRange,
     uDevotionRange,
     uMaturityRange,
     uMaxAge,
@@ -119,7 +119,7 @@ data Universe a = Universe
     _uImageWidth :: Int,
     _uImageHeight :: Int,
     _uClassifierSizeRange :: (Word64, Word64),
-    _uPredictorSizeRange :: (Word64, Word64),
+    -- _uPredictorSizeRange :: (Word64, Word64),
     _uDevotionRange :: (UIDouble, UIDouble),
     _uMaturityRange :: (Word16, Word16),
     _uMaxAge :: Int,
@@ -144,7 +144,7 @@ data Universe a = Universe
     _uPredictorRfRange :: (UIDouble, UIDouble),
     _uPredictorTfRange :: (Word64, Word64),
     _uDefaultOutcomeRange :: (PM1Double, PM1Double),
-    _uStrictnessRange :: (Word8, Word8),
+    _uStrictnessRange :: (Word64, Word64),
     _uImprintOutcomeRange :: (PM1Double, PM1Double),
     _uReinforcementDeltasRange :: (PM1Double, PM1Double),
     _uDepthRange :: (Word8, Word8),
@@ -210,9 +210,9 @@ cClassifierSizeRange :: Setting (Word64, Word64)
 cClassifierSizeRange
   = requiredSetting "classifierSizeRange"
 
-cPredictorSizeRange :: Setting (Word64, Word64)
-cPredictorSizeRange
-  = requiredSetting "predictorSizeRange"
+-- cPredictorSizeRange :: Setting (Word64, Word64)
+-- cPredictorSizeRange
+--   = requiredSetting "predictorSizeRange"
 
 cDevotionRange :: Setting (UIDouble, UIDouble)
 cDevotionRange = requiredSetting "devotionRange"
@@ -281,7 +281,7 @@ cPredictorTfRange = requiredSetting "predictorTfRange"
 cDefaultOutcomeRange :: Setting (PM1Double, PM1Double)
 cDefaultOutcomeRange = requiredSetting "defaultOutcomeRange"
 
-cStrictnessRange :: Setting (Word8, Word8)
+cStrictnessRange :: Setting (Word64, Word64)
 cStrictnessRange = requiredSetting "strictnessRange"
 
 cImprintOutcomeRange :: Setting (PM1Double, PM1Double)
@@ -304,7 +304,7 @@ cCheckpoints = requiredSetting "checkpoints"
 
 loadUniverse :: IO (Universe a)
 loadUniverse = do
-  configFile <- Path <$> makeRelativeToCurrentDirectory "iomha.config"
+  configFile <- Path <$> makeRelativeToCurrentDirectory "wain.config"
   readResult <- try $ readSettings configFile
   case readResult of
     Right (_, GetSetting getSetting) ->
@@ -333,7 +333,7 @@ config2Universe getSetting =
       _uImageWidth = getSetting cImageWidth,
       _uImageHeight = getSetting cImageHeight,
       _uClassifierSizeRange = getSetting cClassifierSizeRange,
-      _uPredictorSizeRange = getSetting cPredictorSizeRange,
+      -- _uPredictorSizeRange = getSetting cPredictorSizeRange,
       _uDevotionRange = getSetting cDevotionRange,
       _uMaturityRange = getSetting cMaturityRange,
       _uMaxAge = getSetting cMaxAge,

@@ -28,17 +28,17 @@ import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
   objectAppearance)
 -- import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
-import ALife.Creatur.Wain.Response (action)
+import ALife.Creatur.Wain.Response (labels, action)
 import ALife.Creatur.Wain.Statistics (stats)
 import ALife.Creatur.Wain.UnitInterval (UIDouble)
 import ALife.Creatur.Wain.Weights (makeWeights)
 import ALife.Creatur.Util (shuffle)
 import Control.Lens
-import Control.Monad (foldM)
+import Control.Monad (foldM, when)
 import Control.Monad.Random (evalRand, mkStdGen)
 import Data.Function (on)
-import Data.List (sortBy, groupBy, maximumBy)
-import Data.Map.Lazy (Map, insertWith, elems, empty, size)
+import Data.List (sortBy, groupBy)
+import Data.Map.Lazy ((!), Map, insertWith, elems, empty, size)
 import Data.Ord (comparing)
 import System.Directory
 import System.Environment (getArgs)
@@ -61,7 +61,7 @@ testWain :: UIDouble -> UIDouble -> UIDouble -> UIDouble -> UIDouble -> ImageWai
 testWain threshold r0c rfc r0p rfp = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
-        Right wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 32 wIos wRds
+        Right wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 256 wIos wRds
         wDevotion = 0.1
         wAgeOfMaturity = 100
         wPassionDelta = 0
@@ -95,23 +95,28 @@ trainOne (w, modelCreationData) obj = do
     ++ objectId obj ++ " is " ++ show a
   -- putStrLn "Predictor models before"
   -- mapM_ putStrLn $ IW.describePredictorModels w
-  let (_, sps, _, _, w') = imprint [objectAppearance obj] a w
+  let (lds, sps, _, r, w') = imprint [objectAppearance obj] a w
+  let topLds = take 3 . sortBy (comparing snd) . head $ lds
+  putStrLn $ "Top lds=" ++ show topLds
+  let topSps = take 3 . reverse . sortBy (comparing snd) $ sps
+  putStrLn $ "Top sps=" ++ show topSps
   -- putStrLn $ "lds=" ++ show lds
   -- putStrLn $ "sps=" ++ show sps
   -- putStrLn $ "pBMU=" ++ show pBMU
-  -- putStrLn $ "Wain is learning " ++ show r
+  putStrLn $ "Wain is learning " ++ show r
   -- putStrLn $ "predictor learning rate=" ++ show (currentLearningRate $ view (brain . predictor) w)
   -- putStrLn "Predictor models after"
   -- mapM_ putStrLn $ IW.describePredictorModels w'
-  let bmu = head . fst $ maximumBy (comparing snd) sps
-  putStrLn $ objectId obj ++ "," ++ numeral : "," ++ show bmu
-  let modelCreationData' = updateModelCreationData bmu numeral modelCreationData
-  -- let originalNumeral = snd $ modelCreationData' ! bmu
-  -- -- putStrLn $ "DEBUG: " ++ show bmu ++ " " ++ show (modelCreationData' ! bmu)
-  -- when (numeral /= originalNumeral) $
-  --   putStrLn $ "Model " ++ show bmu ++ " was created for numeral "
-  --     ++ show originalNumeral
-  --     ++ " but is now being used for numeral " ++ show numeral
+  let cBmu = head . view labels $ r
+  let cBmuDiff = snd . head . head $ lds
+  putStrLn $ objectId obj ++ "," ++ numeral : "," ++ show cBmu ++ "," ++ show cBmuDiff
+  let modelCreationData' = updateModelCreationData cBmu numeral modelCreationData
+  let originalNumeral = snd $ modelCreationData' ! cBmu
+  -- putStrLn $ "DEBUG: " ++ show bmu ++ " " ++ show (modelCreationData' ! bmu)
+  when (numeral /= originalNumeral) $
+    putStrLn $ "Model " ++ show cBmu ++ " was created for numeral "
+      ++ show originalNumeral
+      ++ " but is now being used for numeral " ++ show numeral
   -- mapM_ putStrLn $ IW.describePredictorModels w'
   return (w', modelCreationData')
 
@@ -119,17 +124,19 @@ testOne :: ImageWain -> [(Numeral, Bool)] -> Object Action -> IO [(Numeral, Bool
 testOne w testStats obj = do
   putStrLn $ "-----"
   let (lds, _, _, _, r, _) = chooseAction [objectAppearance obj] w
-  let (cBMU, _):(cBMU2, _):_ = sortBy (comparing snd) . head $ lds
+  let (cBMU, _):(cBMU2, _):_ = head $ lds
   let a = view action r
   putStrLn $ "Wain sees " ++ objectId obj ++ ", classifies it as "
     ++ show cBMU ++ " (alt. " ++ show cBMU2
     ++ ") and chooses to " ++ show a
+  let cBmuDiff = snd . head . head $ lds
   let numeral = head . show $ objectNum obj
   let answer = numeralFor a
   let wasCorrect = answer == numeral
   let novelty = minimum . map snd . head $ lds :: UIDouble
   putStrLn $ objectId obj ++ "," ++ numeral : "," ++ show answer
     ++ "," ++ show wasCorrect ++ "," ++ show novelty
+    ++ "," ++ show cBMU ++ "," ++ show cBmuDiff
   return $ (numeral, wasCorrect):testStats
 
 readDirAndShuffle :: FilePath -> IO [FilePath]
@@ -211,6 +218,7 @@ main = do
   putStrLn "Testing"
   putStrLn "====="
   testSamples <- readSamples testDir
+  putStrLn "filename,numeral,answer,correct,novelty,label,diff"
   stats2 <- foldM (testOne trainedWain) [] testSamples
   putStrLn ""
   putStrLn "====="

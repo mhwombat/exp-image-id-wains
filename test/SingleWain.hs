@@ -35,7 +35,7 @@ import ALife.Creatur.Wain.Weights (makeWeights)
 import ALife.Creatur.Util (shuffle)
 import Control.Lens
 import Control.Monad (foldM, when)
-import Control.Monad.Random (evalRand, mkStdGen)
+import Control.Monad.Random (evalRand, newStdGen)
 import Data.Function (on)
 import Data.List (sortBy, groupBy)
 import Data.Map.Lazy ((!), Map, insertWith, elems, empty, size)
@@ -141,7 +141,8 @@ testOne w testStats obj = do
 
 readDirAndShuffle :: FilePath -> IO [FilePath]
 readDirAndShuffle d = do
-  let g = mkStdGen 263167 -- seed
+  g <- newStdGen
+  -- let g = mkStdGen 263167 -- seed
   let d2 = d ++ "/"
   files <- map (d2 ++) . filter (\s -> head s /= '.') <$> getDirectoryContents d
   return $ evalRand (shuffle files) g

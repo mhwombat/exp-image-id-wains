@@ -40,6 +40,7 @@ import Data.Function (on)
 import Data.List (sortBy, groupBy)
 import Data.Map.Lazy ((!), Map, insertWith, elems, empty, size)
 import Data.Ord (comparing)
+import Data.Word (Word64)
 import System.Directory
 import System.Environment (getArgs)
 import System.FilePath.Posix (takeFileName)
@@ -57,11 +58,11 @@ runAction a obj w =
   where (wCorrect, _) = adjustEnergy reward w
         (wIncorrect, _) = adjustEnergy (-reward) w
 
-testWain :: UIDouble -> UIDouble -> UIDouble -> UIDouble -> UIDouble -> ImageWain
-testWain threshold r0c rfc r0p rfp = w'
+testWain :: UIDouble -> UIDouble -> UIDouble -> UIDouble -> UIDouble -> Word64 -> ImageWain
+testWain threshold r0c rfc r0p rfp s = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
-        Right wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 256 wIos wRds
+        Right wBrain = makeBrain wClassifier wMuser wPredictor wHappinessWeights 1 s wIos wRds
         wDevotion = 0.1
         wAgeOfMaturity = 100
         wPassionDelta = 0
@@ -126,6 +127,12 @@ testOne w testStats obj = do
   let (lds, _, _, _, r, _) = chooseAction [objectAppearance obj] w
   let (cBMU, _):(cBMU2, _):_ = head $ lds
   let a = view action r
+  let topLds = take 3 . sortBy (comparing snd) . head $ lds
+  putStrLn $ "Top lds=" ++ show topLds
+  -- let topSps = take 3 . reverse . sortBy (comparing snd) $ sps
+  -- putStrLn $ "Top sps=" ++ show topSps
+  -- putStrLn $ "rplos=" ++ show rplos
+  -- putStrLn $ "aohs=" ++ show aohs
   putStrLn $ "Wain sees " ++ objectId obj ++ ", classifies it as "
     ++ show cBMU ++ " (alt. " ++ show cBMU2
     ++ ") and chooses to " ++ show a
@@ -189,6 +196,7 @@ main = do
   let r0p = read $ args !! 5
   let rfp = read $ args !! 6
   let passes  = read $ args !! 7
+  let strictness = read $ args !! 8
   putStrLn $ "trainingDir=" ++ trainingDir
   putStrLn $ "testDir=" ++ testDir
   putStrLn $ "r0c=" ++ show r0c
@@ -197,12 +205,13 @@ main = do
   putStrLn $ "r0p=" ++ show r0p
   putStrLn $ "rfp=" ++ show rfp
   putStrLn $ "passes=" ++ show passes
+  putStrLn $ "strictness=" ++ show strictness
   putStrLn "====="
   putStrLn "Training"
   putStrLn "====="
   trainingSamples <- concat . replicate passes <$> readSamples trainingDir
   putStrLn "filename,numeral,label"
-  (trainedWain, modelCreationData) <- foldM trainOne (testWain threshold r0c rfc r0p rfp, empty) trainingSamples
+  (trainedWain, modelCreationData) <- foldM trainOne (testWain threshold r0c rfc r0p rfp strictness, empty) trainingSamples
   putStrLn $ "stats=" ++ show (stats trainedWain)
   putStrLn ""
   putStrLn "====="

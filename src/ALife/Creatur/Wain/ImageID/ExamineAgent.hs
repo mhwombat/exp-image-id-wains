@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 -- |
--- Module      :  ALife.Creatur.Wain.Numeral.ExamineAgent
--- Copyright   :  (c) Amy de Buitléir 2013-2015
+-- Module      :  ALife.Creatur.Wain.ImageID.ExamineAgent
+-- Copyright   :  (c) Amy de Buitléir 2013-2016
 -- License     :  BSD-style
 -- Maintainer  :  amy@nualeargais.ie
 -- Stability   :  experimental
@@ -12,12 +12,12 @@
 ------------------------------------------------------------------------
 module Main where
 
-import ALife.Creatur.Wain.Numeral.Experiment
-import ALife.Creatur.Wain.ExamineAgent (fetchWains, examine)
+import ALife.Creatur.Wain.ImageID.Experiment
+import ALife.Creatur.Wain.Image.ExamineAgent (fetchWains, examine)
 import System.Environment
 
 main :: IO ()
 main = do
   (f:_) <- getArgs
-  ws <- fetchWains f :: IO [ImageWain]
+  ws <- fetchWains f :: IO [PatternWain]
   mapM_ examine ws

@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 -- |
--- Module      :  ALife.Creatur.Wain.Numeral.Universe
--- Copyright   :  (c) Amy de Buitléir 2012-2015
+-- Module      :  ALife.Creatur.Wain.ImageID.Universe
+-- Copyright   :  (c) Amy de Buitléir 2012-2016
 -- License     :  BSD-style
 -- Maintainer  :  amy@nualeargais.ie
 -- Stability   :  experimental
@@ -16,7 +16,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-module ALife.Creatur.Wain.Numeral.Universe
+module ALife.Creatur.Wain.ImageID.Universe
   (
     -- * Constructors
     Universe(..),
@@ -33,13 +33,16 @@ module ALife.Creatur.Wain.Numeral.Universe
     uRawStatsFile,
     uShowPredictorModels,
     uShowPredictions,
+    uShowScenarioReport,
+    uShowResponseReport,
+    uShowDecisionReport,
     uGenFmris,
     uSleepBetweenTasks,
-    uImageDB,
+    uPatternDB,
     uImageWidth,
     uImageHeight,
     uClassifierSizeRange,
-    -- uPredictorSizeRange,
+    uPredictorSizeRange,
     uDevotionRange,
     uMaturityRange,
     uMaxAge,
@@ -67,9 +70,8 @@ module ALife.Creatur.Wain.Numeral.Universe
     uStrictnessRange,
     uImprintOutcomeRange,
     uReinforcementDeltasRange,
-    uDepthRange,
-    uBoredomDeltaRange,
     uPassionDeltaRange,
+    uDepthRange,
     uCheckpoints,
     -- * Other
     U.agentIds,
@@ -91,7 +93,7 @@ import qualified ALife.Creatur.Logger.SimpleLogger as SL
 import ALife.Creatur.Persistent (Persistent, mkPersistent)
 import qualified ALife.Creatur.Universe as U
 import qualified ALife.Creatur.Wain.Checkpoint as CP
-import ALife.Creatur.Wain.ImageDB (ImageDB, mkImageDB)
+import ALife.Creatur.Wain.Image.PatternDB (PatternDB, mkPatternDB)
 import ALife.Creatur.Wain.PlusMinusOne (PM1Double)
 import ALife.Creatur.Wain.UnitInterval (UIDouble)
 import Control.Exception (SomeException, try)
@@ -113,13 +115,16 @@ data Universe a = Universe
     _uRawStatsFile :: FilePath,
     _uShowPredictorModels :: Bool,
     _uShowPredictions :: Bool,
+    _uShowScenarioReport :: Bool,
+    _uShowResponseReport :: Bool,
+    _uShowDecisionReport :: Bool,
     _uGenFmris :: Bool,
     _uSleepBetweenTasks :: Int,
-    _uImageDB :: ImageDB,
+    _uPatternDB :: PatternDB,
     _uImageWidth :: Int,
     _uImageHeight :: Int,
     _uClassifierSizeRange :: (Word64, Word64),
-    -- _uPredictorSizeRange :: (Word64, Word64),
+    _uPredictorSizeRange :: (Word64, Word64),
     _uDevotionRange :: (UIDouble, UIDouble),
     _uMaturityRange :: (Word16, Word16),
     _uMaxAge :: Int,
@@ -147,9 +152,8 @@ data Universe a = Universe
     _uStrictnessRange :: (Word64, Word64),
     _uImprintOutcomeRange :: (PM1Double, PM1Double),
     _uReinforcementDeltasRange :: (PM1Double, PM1Double),
-    _uDepthRange :: (Word8, Word8),
-    _uBoredomDeltaRange :: (UIDouble, UIDouble),
     _uPassionDeltaRange :: (UIDouble, UIDouble),
+    _uDepthRange :: (Word8, Word8),
     _uCheckpoints :: [CP.Checkpoint]
   } deriving Show
 makeLenses ''Universe
@@ -191,6 +195,15 @@ cShowPredictorModels = requiredSetting "showPredictorModels"
 cShowPredictions :: Setting Bool
 cShowPredictions = requiredSetting "showPredictions"
 
+cShowScenarioReport :: Setting Bool
+cShowScenarioReport = requiredSetting "showScenarioReport"
+
+cShowResponseReport :: Setting Bool
+cShowResponseReport = requiredSetting "showResponseReport"
+
+cShowDecisionReport :: Setting Bool
+cShowDecisionReport = requiredSetting "showDecisionReport"
+
 cGenFmris :: Setting Bool
 cGenFmris = requiredSetting "genFMRIs"
 
@@ -210,9 +223,9 @@ cClassifierSizeRange :: Setting (Word64, Word64)
 cClassifierSizeRange
   = requiredSetting "classifierSizeRange"
 
--- cPredictorSizeRange :: Setting (Word64, Word64)
--- cPredictorSizeRange
---   = requiredSetting "predictorSizeRange"
+cPredictorSizeRange :: Setting (Word64, Word64)
+cPredictorSizeRange
+  = requiredSetting "predictorSizeRange"
 
 cDevotionRange :: Setting (UIDouble, UIDouble)
 cDevotionRange = requiredSetting "devotionRange"
@@ -290,14 +303,11 @@ cImprintOutcomeRange = requiredSetting "imprintOutcomeRange"
 cReinforcementDeltasRange :: Setting (PM1Double, PM1Double)
 cReinforcementDeltasRange = requiredSetting "reinforcementDeltasRange"
 
-cDepthRange :: Setting (Word8, Word8)
-cDepthRange = requiredSetting "depthRange"
-
-cBoredomDeltaRange :: Setting (UIDouble, UIDouble)
-cBoredomDeltaRange = requiredSetting "boredomDeltaRange"
-
 cPassionDeltaRange :: Setting (UIDouble, UIDouble)
 cPassionDeltaRange = requiredSetting "passionDeltaRange"
+
+cDepthRange :: Setting (Word8, Word8)
+cDepthRange = requiredSetting "depthRange"
 
 cCheckpoints :: Setting [CP.Checkpoint]
 cCheckpoints = requiredSetting "checkpoints"
@@ -327,13 +337,16 @@ config2Universe getSetting =
       _uRawStatsFile = workDir ++ "/rawStatsFile",
       _uShowPredictorModels = getSetting cShowPredictorModels,
       _uShowPredictions = getSetting cShowPredictions,
+      _uShowScenarioReport = getSetting cShowScenarioReport,
+      _uShowResponseReport = getSetting cShowResponseReport,
+      _uShowDecisionReport = getSetting cShowDecisionReport,
       _uGenFmris = getSetting cGenFmris,
       _uSleepBetweenTasks = getSetting cSleepBetweenTasks,
-      _uImageDB = mkImageDB imageDir,
+      _uPatternDB = mkPatternDB imageDir,
       _uImageWidth = getSetting cImageWidth,
       _uImageHeight = getSetting cImageHeight,
       _uClassifierSizeRange = getSetting cClassifierSizeRange,
-      -- _uPredictorSizeRange = getSetting cPredictorSizeRange,
+      _uPredictorSizeRange = getSetting cPredictorSizeRange,
       _uDevotionRange = getSetting cDevotionRange,
       _uMaturityRange = getSetting cMaturityRange,
       _uMaxAge = getSetting cMaxAge,
@@ -363,9 +376,8 @@ config2Universe getSetting =
       _uStrictnessRange = getSetting cStrictnessRange,
       _uImprintOutcomeRange = getSetting cImprintOutcomeRange,
       _uReinforcementDeltasRange = getSetting cReinforcementDeltasRange,
-      _uDepthRange = getSetting cDepthRange,
-      _uBoredomDeltaRange = getSetting cBoredomDeltaRange,
       _uPassionDeltaRange = getSetting cPassionDeltaRange,
+      _uDepthRange = getSetting cDepthRange,
       _uCheckpoints = getSetting cCheckpoints
     }
   where en = getSetting cExperimentName

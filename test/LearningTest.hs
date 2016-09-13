@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 -- |
 -- Module      :  LearningTest
--- Copyright   :  (c) Amy de Buitléir 2013-2015
+-- Copyright   :  (c) Amy de Buitléir 2013-2016
 -- License     :  BSD-style
 -- Maintainer  :  amy@nualeargais.ie
 -- Stability   :  experimental
@@ -19,16 +19,17 @@ import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
   decisionQuality)
 import ALife.Creatur.Wain.Classifier (buildClassifier)
 import ALife.Creatur.Wain.GeneticSOMInternal (LearningParams(..))
-import ALife.Creatur.Wain.Image
-import qualified ALife.Creatur.Wain.ImageWain as IW
-import ALife.Creatur.Wain.Muser (makeMuser)
-import ALife.Creatur.Wain.Numeral.Action (Action(..), correct)
-import ALife.Creatur.Wain.Numeral.Experiment
-import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
+import ALife.Creatur.Wain.Image.Pattern
+import qualified ALife.Creatur.Wain.Image.Wain as IW
+import ALife.Creatur.Wain.Image.Object (Object(..), objectNum, objectId,
   objectAppearance)
+import ALife.Creatur.Wain.ImageID.Action (Action(..), correct)
+import ALife.Creatur.Wain.ImageID.Experiment
+import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
 import ALife.Creatur.Wain.Response (action, outcomes)
+import ALife.Creatur.Wain.SimpleResponseTweaker (ResponseTweaker(..))
 import ALife.Creatur.Wain.Statistics (stats)
 import ALife.Creatur.Wain.UnitInterval (uiToDouble)
 import ALife.Creatur.Wain.Weights (makeWeights)
@@ -47,15 +48,17 @@ numTests = 1000
 reward :: Double
 reward = 0.1
 
-runAction :: Action -> Object Action -> ImageWain -> ImageWain
+runAction
+  :: Action -> Object Action (ResponseTweaker Action) -> PatternWain
+    -> PatternWain
 runAction a obj w =
   if correct a (objectNum obj)
     then wCorrect
     else wIncorrect
   where (wCorrect, _) = adjustEnergy reward w
         (wIncorrect, _) = adjustEnergy (-reward) w
-        
-testWain :: ImageWain
+
+testWain :: PatternWain
 testWain = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
@@ -64,12 +67,12 @@ testWain = w'
         wAgeOfMaturity = 100
         wPassionDelta = 0
         wBoredomDelta = 0
-        wClassifier = buildClassifier ec wCSize 0.14 ImageTweaker
+        wClassifier = buildClassifier ec wCSize 0.14 PatternTweaker
         wCSize = 500
-        wMuser = makeMuser [0, 0, 0, 0] 1
+        Right wMuser = makeMuser [0, 0, 0, 0] 1
         wIos = [doubleToPM1 reward, 0, 0, 0]
         wRds = [0.1, 0, 0, 0]
-        wPredictor = buildPredictor ep (wCSize*11) 0.1
+        wPredictor = buildPredictor ep (wCSize*11) 0.1 ResponseTweaker
         wHappinessWeights = makeWeights [1, 0, 0, 0]
         ec = LearningParams 1 0.001 (fromIntegral numTests)
         ep = LearningParams 1 0.001 (fromIntegral numTests)
@@ -83,19 +86,19 @@ putHtml s = putStr s
 putHtmlLn :: String -> IO ()
 putHtmlLn s = putStrLn $ s ++ "<br/>"
 
-tryOne :: ImageWain -> Object Action -> IO (ImageWain)
+tryOne
+  :: PatternWain -> Object Action (ResponseTweaker Action)
+    -> IO (PatternWain)
 tryOne w obj = do
   putHtmlLn $ "-----<br/>"
   putHtmlLn $ "stats=" ++ show (stats w)
-  -- putHtmlLn "Initial classifier models:"
-  -- IW.describeClassifierModels w
-  -- putHtmlLn "Initial prediction models"
-  -- IW.describePredictorModels w
-  let (lds, sps, rplos, aos, r, wainAfterDecision) = chooseAction [objectAppearance obj] w
-  let (cBMU, _) = minimumBy (comparing snd) . head $ lds
+  let (ldss, sps, rplos, aohs, r, wainAfterDecision)
+        = chooseAction [objectAppearance obj] w
+  putStrLn $ "ldss=" ++ show ldss
+  let (cBMU, _) = minimumBy (comparing snd) . head $ ldss
   mapM_ putHtmlLn $ scenarioReport sps
   mapM_ putHtmlLn $ responseReport rplos
-  mapM_ putHtmlLn $ decisionReport aos
+  mapM_ putHtmlLn $ decisionReport aohs
   putHtmlLn $ "DEBUG classifier SQ=" ++ show (schemaQuality . view (brain . classifier) $ wainAfterDecision)
   mapM_ putHtmlLn $ IW.describeClassifierModels wainAfterDecision
   mapM_ putHtmlLn $ IW.describePredictorModels wainAfterDecision
@@ -112,8 +115,8 @@ tryOne w obj = do
   putHtmlLn $ "happiness before=" ++ show (happiness w) ++ " after=" ++ show (happiness wainRewarded)
   putHtml $ "Choosing to " ++ show a ++ " in response to " ++ objectId obj
   if correct a (objectNum obj)
-    then putHtmlLn " was wrong"
-    else putHtmlLn " was correct"
+    then putHtmlLn " was correct"
+    else putHtmlLn " was wrong"
   let (wainAfterReflection, err) = reflect [objectAppearance obj] r w wainRewarded
   putHtmlLn $ "err=" ++ show err
   -- keep the wain's energy constant
@@ -122,32 +125,10 @@ tryOne w obj = do
   let restorationBoredom = uiToDouble (view boredom w) - uiToDouble (view boredom wainRewarded)
   let (wainPartiallyRestored, _) = adjustEnergy restorationEnergy wainAfterReflection
   let (wainFinal, _) = adjustBoredom restorationBoredom wainPartiallyRestored
-  -- putHtmlLn "Final classifier models"
-  -- IW.describeClassifierModels wainFinal
-  -- putHtmlLn "Final prediction models"
-  -- IW.describePredictorModels wainFinal
   putHtmlLn $ "classifier SQ=" ++ show (schemaQuality . view (brain . classifier) $ w)
   putHtmlLn $ "predictor SQ=" ++ show (schemaQuality . view (brain . predictor) $ w)
   putHtmlLn $ "DQ=" ++ show (decisionQuality . view brain $ w)
   return wainFinal
-
--- describeClassifierModels :: ImageWain -> IO ()
--- describeClassifierModels w = mapM_ (putHtml . f) ms >> putHtmlLn ""
---   where ms = M.toList . modelMap . view (brain . classifier) $ w
---         f (l, r) = show l ++ ": <img src='data:image/png;base64,"
---                      ++ base64encode r ++ "'/>"
-
--- describePredictorModels :: ImageWain -> IO ()
--- describePredictorModels w = describePredictorModels' ms
---   where ms = M.toList . modelMap . view (brain . predictor) $ w
-
--- describePredictorModels' :: [(Label, Response Action)] -> IO ()
--- describePredictorModels' [] = return ()
--- describePredictorModels' xs = do
---   putHtmlLn $ concatMap f ys
---   describePredictorModels' zs
---   where (ys, zs) = splitAt 4 xs
---         f (l, r) = show l ++ ": " ++ pretty r ++ " "
 
 dir :: String
 dir = "/home/eamybut/mnist/trainingData/"
@@ -158,16 +139,16 @@ readDirAndShuffle d = do
   files <- map (d ++) . drop 2 <$> getDirectoryContents d
   return $ evalRand (shuffle files) g
 
-readImage2 :: FilePath -> IO (Object Action)
-readImage2 f = do
+readOneSample :: FilePath -> IO (Object Action (ResponseTweaker Action))
+readOneSample f = do
   img <- readImage f
-  return $ IObject img (takeFileName f)
+  return $ PObject img (takeFileName f)
 
 main :: IO ()
 main = do
   putHtmlLn $ "numTests=" ++ show numTests
   files <- take numTests . drop 2 <$> readDirAndShuffle dir
-  imgs <- mapM readImage2 files
+  imgs <- mapM readOneSample files
   _ <- foldM tryOne testWain imgs
   putHtmlLn "test complete"
 

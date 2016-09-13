@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 -- |
--- Module      :  ALife.Creatur.Wain.Numeral.ExperimentQC
--- Copyright   :  (c) Amy de Buitléir 2013-2015
+-- Module      :  ALife.Creatur.Wain.ImageID.ExperimentQC
+-- Copyright   :  (c) Amy de Buitléir 2013-2016
 -- License     :  BSD-style
 -- Maintainer  :  amy@nualeargais.ie
 -- Stability   :  experimental
@@ -10,12 +10,12 @@
 -- QuickCheck tests.
 --
 ------------------------------------------------------------------------
-module ALife.Creatur.Wain.Numeral.ExperimentQC
+module ALife.Creatur.Wain.ImageID.ExperimentQC
   (
     test
   ) where
 
--- import ALife.Creatur.Wain.Numeral.Experiment
+-- import ALife.Creatur.Wain.ImageID.Experiment
 import Test.Framework (Test, testGroup)
 -- import Test.Framework.Providers.QuickCheck2 (testProperty)
 -- import Test.QuickCheck
@@ -41,7 +41,7 @@ import Test.Framework (Test, testGroup)
 --         ec2 = idealPopControlDeltaE pIdeal p2 deltaE
 
 test :: Test
-test = testGroup "ALife.Creatur.Wain.Numeral.ExperimentQC"
+test = testGroup "ALife.Creatur.Wain.ImageID.ExperimentQC"
   [
     -- testProperty "prop_idealPopControlDeltaE_counteracts_overpopulation"
     --   prop_idealPopControlDeltaE_counteracts_overpopulation,

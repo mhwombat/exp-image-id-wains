@@ -1,5 +1,5 @@
 name:                exp-image-id-wains
-version:             2.19.2
+version:             2.20.0
 synopsis:            ALife agent that maps images to numerals.
 description:         ALife agent that maps images to numerals.
 homepage:            https://github.com/mhwombat/numeral-wains
@@ -7,13 +7,13 @@ license:             BSD3
 license-file:        LICENSE
 author:              Amy de Buitléir
 maintainer:          amy@nualeargais.ie
-copyright:           (c) Amy de Buitléir 2013-2015
+copyright:           (c) Amy de Buitléir 2013-2016
 category:            Data
 build-type:          Simple
 cabal-version:       >=1.8
 
 executable exp-image-id-wains-daemon
-  main-is:          ALife/Creatur/Wain/Numeral/Daemon.hs
+  main-is:          ALife/Creatur/Wain/ImageID/Daemon.hs
   ghc-options:      -Wall -Werror -O2 -rtsopts -threaded
   build-depends:
                     app-settings ==0.2.* && >=0.2.0.5,
@@ -26,8 +26,8 @@ executable exp-image-id-wains-daemon
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==1.1.*,
-                    creatur-wains ==8.4.*,
+                    creatur-image-wains ==1.2.*,
+                    creatur-wains ==8.7.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     hdaemonize ==0.5.*,
@@ -49,7 +49,7 @@ executable exp-image-id-wains-daemon
   hs-source-dirs:   src
 
 executable exp-image-id-wains-init
-  main-is:          ALife/Creatur/Wain/Numeral/GeneratePopulation.hs
+  main-is:          ALife/Creatur/Wain/ImageID/GeneratePopulation.hs
   ghc-options:      -Wall -Werror -O2 -rtsopts -threaded
   build-depends:
                     app-settings ==0.2.* && >=0.2.0.5,
@@ -62,8 +62,8 @@ executable exp-image-id-wains-init
                     colour ==2.3.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==1.1.*,
-                    creatur-wains ==8.4.*,
+                    creatur-image-wains ==1.2.*,
+                    creatur-wains ==8.7.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -83,7 +83,7 @@ executable exp-image-id-wains-init
   hs-source-dirs:   src
 
 executable exp-image-id-wains-examine
-  main-is:          ALife/Creatur/Wain/Numeral/ExamineAgent.hs
+  main-is:          ALife/Creatur/Wain/ImageID/ExamineAgent.hs
   ghc-options:      -Wall -Werror
   build-depends:
                     app-settings ==0.2.* && >=0.2.0.5,
@@ -96,8 +96,8 @@ executable exp-image-id-wains-examine
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==1.1.*,
-                    creatur-wains ==8.4.*,
+                    creatur-image-wains ==1.2.*,
+                    creatur-wains ==8.7.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -132,8 +132,8 @@ Test-suite exp-image-id-wains-tests
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==1.1.*,
-                    creatur-wains ==8.4.*,
+                    creatur-image-wains ==1.2.*,
+                    creatur-wains ==8.7.*,
                     creatur-wains-test-utils ==1.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
@@ -151,7 +151,7 @@ Test-suite exp-image-id-wains-tests
                     utf8-string ==1.*,
                     vector ==0.11.*,
                     QuickCheck ==2.8.*
-  Other-modules:    ALife.Creatur.Wain.Numeral.ActionQC
+  Other-modules:    ALife.Creatur.Wain.ImageID.ActionQC
 
 executable exp-image-id-wains-learning-test
   main-is:          LearningTest.hs
@@ -167,8 +167,8 @@ executable exp-image-id-wains-learning-test
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==1.1.*,
-                    creatur-wains ==8.4.*,
+                    creatur-image-wains ==1.2.*,
+                    creatur-wains ==8.7.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -201,8 +201,8 @@ executable exp-image-id-wains-teaching-test
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==1.1.*,
-                    creatur-wains ==8.4.*,
+                    creatur-image-wains ==1.2.*,
+                    creatur-wains ==8.7.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -235,42 +235,8 @@ executable exp-image-id-wains-single-test
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-image-wains ==1.1.*,
-                    creatur-wains ==8.4.*,
-                    directory ==1.2.*,
-                    filepath ==1.4.*,
-                    JuicyPixels ==3.2.*,
-                    lens ==4.13.*,
-                    MonadRandom ==0.4.*,
-                    mtl ==2.2.*,
-                    old-locale ==1.0.*,
-                    random ==1.1.*,
-                    som ==9.0.*,
-                    split ==0.2.*,
-                    time ==1.6.*,
-                    transformers ==0.5.*,
-                    unix ==2.7.*,
-                    utf8-string ==1.*,
-                    vector ==0.11.*,
-                    zlib ==0.6.*
-  hs-source-dirs:   src, test
-
-executable exp-image-id-wains-big-test
-  main-is:          BigTest.hs
-  ghc-options:      -Wall -Werror
-  build-depends:
-                    app-settings ==0.2.* && >=0.2.0.5,
-                    array ==0.5.*,
-                    base >=4.8 && <5,
-                    base64-bytestring ==1.0.*,
-                    bytestring ==0.10.*,
-                    cereal ==0.5.*,
-                    colour ==2.3.*,
-                    cond ==0.4.*,
-                    containers ==0.5.*,
-                    creatur ==5.9.*,
-                    creatur-image-wains ==1.1.*,
-                    creatur-wains ==8.4.*,
+                    creatur-image-wains ==1.2.*,
+                    creatur-wains ==8.7.*,
                     directory ==1.2.*,
                     filepath ==1.4.*,
                     JuicyPixels ==3.2.*,
@@ -295,8 +261,8 @@ executable exp-image-id-wains-diff-analysis
   build-depends:
                     base >=4.8 && <5,
                     creatur ==5.9.*,
-                    creatur-wains ==8.4.*,
-                    creatur-image-wains ==1.1.*,
+                    creatur-wains ==8.7.*,
+                    creatur-image-wains ==1.2.*,
                     MonadRandom ==0.4.*,
                     directory ==1.2.*,
                     filepath ==1.4.*
@@ -313,8 +279,8 @@ executable exp-image-id-wains-sgm-comparison
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-wains ==8.4.*,
-                    creatur-image-wains ==1.1.*,
+                    creatur-wains ==8.7.*,
+                    creatur-image-wains ==1.2.*,
                     lens ==4.13.*,
                     MonadRandom ==0.4.*,
                     mtl ==2.2.*,
@@ -337,8 +303,8 @@ executable exp-image-id-wains-sgm-comparison2
                     cond ==0.4.*,
                     containers ==0.5.*,
                     creatur ==5.9.*,
-                    creatur-wains ==8.4.*,
-                    creatur-image-wains ==1.1.*,
+                    creatur-wains ==8.7.*,
+                    creatur-image-wains ==1.2.*,
                     lens ==4.13.*,
                     MonadRandom ==0.4.*,
                     mtl ==2.2.*,

@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 -- |
--- Module      :  ALife.Creatur.Wain.Numeral.ActionQC
--- Copyright   :  (c) Amy de Buitléir 2013-2015
+-- Module      :  ALife.Creatur.Wain.ImageID.ActionQC
+-- Copyright   :  (c) Amy de Buitléir 2013-2016
 -- License     :  BSD-style
 -- Maintainer  :  amy@nualeargais.ie
 -- Stability   :  experimental
@@ -10,12 +10,12 @@
 -- QuickCheck tests.
 --
 ------------------------------------------------------------------------
-module ALife.Creatur.Wain.Numeral.ActionQC
+module ALife.Creatur.Wain.ImageID.ActionQC
   (
     test
   ) where
 
-import ALife.Creatur.Wain.Numeral.Action (Action)
+import ALife.Creatur.Wain.ImageID.Action (Action)
 import ALife.Creatur.Wain.TestUtils (prop_serialize_round_trippable,
   prop_genetic_round_trippable, prop_diploid_identity)
 import Test.Framework (Test, testGroup)
@@ -26,7 +26,7 @@ instance Arbitrary Action where
   arbitrary = elements [minBound .. maxBound]
 
 test :: Test
-test = testGroup "ALife.Creatur.Wain.Numeral.ActionQC"
+test = testGroup "ALife.Creatur.Wain.ImageID.ActionQC"
   [
     testProperty "prop_serialize_round_trippable - Action"
       (prop_serialize_round_trippable :: Action -> Property),

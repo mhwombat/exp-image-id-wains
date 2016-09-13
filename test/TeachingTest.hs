@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 -- |
 -- Module      :  TeachingTest
--- Copyright   :  (c) Amy de Buitléir 2013-2015
+-- Copyright   :  (c) Amy de Buitléir 2013-2016
 -- License     :  BSD-style
 -- Maintainer  :  amy@nualeargais.ie
 -- Stability   :  experimental
@@ -19,17 +19,18 @@ import ALife.Creatur.Wain.BrainInternal (classifier, predictor,
   makeBrain, decisionQuality)
 import ALife.Creatur.Wain.Classifier (buildClassifier)
 import ALife.Creatur.Wain.GeneticSOMInternal (LearningParams(..))
-import ALife.Creatur.Wain.Image
-import qualified ALife.Creatur.Wain.ImageWain as IW
-import ALife.Creatur.Wain.Muser (makeMuser)
-import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
-  correctActions)
-import ALife.Creatur.Wain.Numeral.Experiment
-import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
+import ALife.Creatur.Wain.Image.Pattern
+import qualified ALife.Creatur.Wain.Image.Wain as IW
+import ALife.Creatur.Wain.Image.Object (Object(..), objectNum, objectId,
   objectAppearance)
+import ALife.Creatur.Wain.ImageID.Action (Action(..), correct,
+  correctActions)
+import ALife.Creatur.Wain.ImageID.Experiment
+import ALife.Creatur.Wain.Muser (makeMuser)
 import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
 import ALife.Creatur.Wain.Response (action, outcomes)
+import ALife.Creatur.Wain.SimpleResponseTweaker (ResponseTweaker(..))
 import ALife.Creatur.Wain.Statistics (stats)
 import ALife.Creatur.Wain.UnitInterval (uiToDouble)
 import ALife.Creatur.Wain.Weights (makeWeights)
@@ -45,7 +46,9 @@ import System.FilePath.Posix (takeFileName)
 reward :: Double
 reward = 0.1
 
-runAction :: Action -> Object Action -> ImageWain -> ImageWain
+runAction
+  :: Action -> Object Action (ResponseTweaker Action) -> PatternWain
+    -> PatternWain
 runAction a obj w =
   if correct a (objectNum obj)
     then wCorrect
@@ -53,7 +56,7 @@ runAction a obj w =
   where (wCorrect, _) = adjustEnergy reward w
         (wIncorrect, _) = adjustEnergy (-reward) w
         
-testWain :: ImageWain
+testWain :: PatternWain
 testWain = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
@@ -62,15 +65,17 @@ testWain = w'
         wAgeOfMaturity = 100
         wPassionDelta = 0
         wBoredomDelta = 0
-        wClassifier = buildClassifier ec wCSize 0.12 ImageTweaker
+        wClassifier = buildClassifier ec wCSize 0.12 PatternTweaker
         wCSize = 1000
-        wMuser = makeMuser [-1, -1, -1, -1] 1
+        Right wMuser = makeMuser [-1, -1, -1, -1] 1
         wIos = [doubleToPM1 reward, 0, 0, 0]
         wRds = [0.1, 0, 0, 0]
-        wPredictor = buildPredictor ep (wCSize*11) 0.1
+        wPredictor = buildPredictor ep (wCSize*11) 0.1 ResponseTweaker
         wHappinessWeights = makeWeights [1, 0, 0, 0]
-        ec = LearningParams 1 0.001 (fromIntegral numTests)
-        ep = LearningParams 1 0.0001 (fromIntegral numTests)
+        -- The classifier does most of its learning by round 100.
+        ec = LearningParams 0.1 0.001 (fromIntegral numImprints)
+        -- The predictor needs to keep learning longer.
+        ep = LearningParams 0.1 0.0001 (fromIntegral numImprints)
         w = buildWainAndGenerateGenome wName wAppearance wBrain
               wDevotion wAgeOfMaturity wPassionDelta wBoredomDelta
         (w', _) = adjustEnergy 0.5 w
@@ -81,7 +86,9 @@ putHtml s = putStr s
 putHtmlLn :: String -> IO ()
 putHtmlLn s = putStrLn $ s ++ "<br/>"
 
-imprintOne :: ImageWain -> Object Action -> IO (ImageWain)
+imprintOne
+  :: PatternWain -> Object Action (ResponseTweaker Action)
+    -> IO (PatternWain)
 imprintOne w obj = do
   let a = correctActions !! (objectNum obj)
   putHtmlLn $ "Teaching " ++ agentId w ++ " that correct action for "
@@ -89,7 +96,9 @@ imprintOne w obj = do
   let (_, _, _, _, w') = imprint [objectAppearance obj] a w
   return w'
 
-tryOne :: ImageWain -> Object Action -> IO (ImageWain)
+tryOne
+  :: PatternWain -> Object Action (ResponseTweaker Action)
+    -> IO (PatternWain)
 tryOne w obj = do
   putHtmlLn $ "-----<br/>"
   putHtmlLn $ "stats=" ++ show (stats w)
@@ -99,15 +108,7 @@ tryOne w obj = do
   putHtmlLn "Initial prediction models"
   mapM_ putHtmlLn $ IW.describePredictorModels w
   let (lds, _, _, _, r, wainAfterDecision) = chooseAction [objectAppearance obj] w
-  -- putHtmlLn $ "DEBUG lds=" ++ show lds
   let (cBMU, _):(cBMU2, _):_ = sortBy (comparing snd) . head $ lds
-  -- putHtmlLn $ "DEBUG cBMU=" ++ show cBMU
-  -- putHtmlLn $ "DEBUG sps=" ++ show sps
-  -- putHtmlLn $ "DEBUG rplos=" ++ show rplos
-  -- mapM_ putHtmlLn $ scenarioReport sps
-  -- mapM_ putHtmlLn $ responseReport rplos
-  -- mapM_ putHtmlLn $ decisionReport aohs
-  -- putHtmlLn $ "DEBUG classifier SQ=" ++ show (schemaQuality . view (brain . classifier) $ wainAfterDecision)
   let a = view action r
   putHtmlLn $ "Wain sees " ++ objectId obj ++ ", classifies it as "
     ++ show cBMU ++ " (alt. " ++ show cBMU2
@@ -137,8 +138,11 @@ tryOne w obj = do
   putHtmlLn $ "DQ=" ++ show (decisionQuality . view brain $ w)
   return wainFinal
 
-dir :: String
-dir = "/home/eamybut/mnist/trainingData/"
+trainingDir :: String
+trainingDir = "/home/eamybut/mnist/trainingData/"
+
+testDir :: String
+testDir = "/home/eamybut/mnist/testData/"
 
 readDirAndShuffle :: FilePath -> IO [FilePath]
 readDirAndShuffle d = do
@@ -146,10 +150,10 @@ readDirAndShuffle d = do
   files <- map (d ++) . drop 2 <$> getDirectoryContents d
   return $ evalRand (shuffle files) g
 
-readImage2 :: FilePath -> IO (Object Action)
-readImage2 f = do
+readOneSample :: FilePath -> IO (Object Action (ResponseTweaker Action))
+readOneSample f = do
   img <- readImage f
-  return $ IObject img (takeFileName f)
+  return $ PObject img (takeFileName f)
 
 numImprints :: Int
 numImprints = 1000
@@ -162,15 +166,16 @@ main = do
   putHtmlLn $ "numImprints=" ++ show numImprints
   putHtmlLn $ "numTests=" ++ show numTests
   putHtmlLn $ "stats=" ++ show (stats testWain)
-  files <- take (numImprints + numTests) . drop 2 <$> readDirAndShuffle dir
-  imgs <- mapM readImage2 files
-  let (imprintImages, testImages) = splitAt numImprints imgs
-  imprintedWain <- foldM imprintOne testWain imprintImages
+  imprintFiles <- take (numImprints + numTests) . drop 2 <$> readDirAndShuffle trainingDir
+  imprintSamples <- mapM readOneSample imprintFiles
+  testFiles <- take numTests . drop 2 <$> readDirAndShuffle testDir
+  testSamples <- mapM readOneSample testFiles
+  imprintedWain <- foldM imprintOne testWain imprintSamples
   putHtmlLn "Imprinted classifier models:"
   mapM_ putHtml $ IW.describeClassifierModels imprintedWain
   putHtmlLn ""
   putHtmlLn "Imprinted prediction models"
   mapM_ putHtmlLn $ IW.describePredictorModels imprintedWain
-  _ <- foldM tryOne imprintedWain testImages
+  _ <- foldM tryOne imprintedWain testSamples
   putHtmlLn "test complete"
 

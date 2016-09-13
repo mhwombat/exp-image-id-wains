@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------
 -- |
 -- Module      :  WainSGMComparison
--- Copyright   :  (c) Amy de Buitléir 2015
+-- Copyright   :  (c) Amy de Buitléir 2015-2016
 -- License     :  BSD-style
 -- Maintainer  :  amy@nualeargais.ie
 -- Stability   :  experimental
@@ -19,17 +19,18 @@ import ALife.Creatur.Wain.BrainInternal (makeBrain, classifier)
 import ALife.Creatur.Wain.Classifier (buildClassifier)
 import ALife.Creatur.Wain.GeneticSOMInternal (LearningParams(..),
   modelMap, currentLearningRate, patternMap)
-import ALife.Creatur.Wain.Image
-import qualified ALife.Creatur.Wain.ImageWain as IW
+import ALife.Creatur.Wain.Image.Pattern
+import qualified ALife.Creatur.Wain.Image.Wain as IW
 import ALife.Creatur.Wain.Muser (makeMuser)
-import ALife.Creatur.Wain.Numeral.Action (Action(..), correct,
+import ALife.Creatur.Wain.ImageID.Action (Action(..), correct,
   correctActions, numeralFor)
-import ALife.Creatur.Wain.Numeral.Experiment
-import ALife.Creatur.Wain.Object (Object(..), objectNum, objectId,
+import ALife.Creatur.Wain.ImageID.Experiment
+import ALife.Creatur.Wain.Image.Object (Object(..), objectNum, objectId,
   objectAppearance)
 import ALife.Creatur.Wain.PlusMinusOne (doubleToPM1)
 import ALife.Creatur.Wain.Predictor (buildPredictor)
 import ALife.Creatur.Wain.Response (action)
+import ALife.Creatur.Wain.SimpleResponseTweaker (ResponseTweaker(..))
 import ALife.Creatur.Wain.Statistics (stats)
 import ALife.Creatur.Wain.UnitInterval (UIDouble, doubleToUI)
 import ALife.Creatur.Wain.Weights (makeWeights)
@@ -58,7 +59,7 @@ type Numeral = Char
 reward :: Double
 reward = 0.1
 
-runAction :: Action -> Object Action -> ImageWain -> ImageWain
+runAction :: Action -> Object Action (ResponseTweaker Action) -> PatternWain -> PatternWain
 runAction a obj w =
   if correct a (objectNum obj)
     then wCorrect
@@ -66,15 +67,15 @@ runAction a obj w =
   where (wCorrect, _) = adjustEnergy reward w
         (wIncorrect, _) = adjustEnergy (-reward) w
 
-type ImageSGM = S.SGM Word64 UIDouble Label Image
+type ImageSGM = S.SGM Word64 UIDouble Label Pattern
 
-putImageGrid :: Int -> [Image] -> IO ()
+putImageGrid :: Int -> [Pattern] -> IO ()
 putImageGrid n xs = mapM_ putImageRow (chunksOf n xs)
 
-putImageRow :: [Image] -> IO ()
+putImageRow :: [Pattern] -> IO ()
 putImageRow xs = mapM_ (putStr . imageToHtml) xs >> putStrLn ""
 
-imageToHtml :: Image -> String
+imageToHtml :: Pattern -> String
 imageToHtml x = "<img src='data:image/png;base64," ++ base64encode x ++ "'/>"
 
 testSGM :: UIDouble -> UIDouble -> UIDouble -> ImageSGM
@@ -84,7 +85,7 @@ testSGM threshold r0 rf
         sgmLearningFunction t = r0 * ((rf/r0)**a)
           where a = doubleToUI $ fromIntegral t / 60000
 
-testWain :: UIDouble -> UIDouble -> UIDouble -> UIDouble -> UIDouble -> ImageWain
+testWain :: UIDouble -> UIDouble -> UIDouble -> UIDouble -> UIDouble -> PatternWain
 testWain threshold r0c rfc r0p rfp = w'
   where wName = "Fred"
         wAppearance = bigX 28 28
@@ -93,12 +94,12 @@ testWain threshold r0c rfc r0p rfp = w'
         wAgeOfMaturity = 100
         wPassionDelta = 0
         wBoredomDelta = 0
-        wClassifier = buildClassifier ec wCSize threshold ImageTweaker
+        wClassifier = buildClassifier ec wCSize threshold PatternTweaker
         wCSize = 2000
-        wMuser = makeMuser [-0.01, -0.01, -0.01, -0.01] 1
+        Right wMuser = makeMuser [-0.01, -0.01, -0.01, -0.01] 1
         wIos = [doubleToPM1 reward, 0, 0, 0]
         wRds = [0.1, 0, 0, 0]
-        wPredictor = buildPredictor ep (wCSize*11) 0.1
+        wPredictor = buildPredictor ep (wCSize*11) 0.1 ResponseTweaker
         wHappinessWeights = makeWeights [1, 0, 0, 0]
         ec = LearningParams r0c rfc 60000
         ep = LearningParams r0p rfp 60000
@@ -114,7 +115,7 @@ updateModelCreationData bmu numeral modelCreationData =
   insertWith f bmu (numeral, numeral) modelCreationData
   where f (x, _) (_, y) = (x, y)
 
-trainOne :: (ImageWain, ModelCreationData, ImageSGM) -> Object Action -> IO (ImageWain, ModelCreationData, ImageSGM)
+trainOne :: (PatternWain, ModelCreationData, ImageSGM) -> Object Action (ResponseTweaker Action) -> IO (PatternWain, ModelCreationData, ImageSGM)
 trainOne (w, modelCreationData, sgm) obj = do
   putStrLn $ "-----"
   putStrLn $ "Wain time: " ++ show (S.time . view (brain . classifier . patternMap) $ w)
@@ -186,7 +187,7 @@ trainOne (w, modelCreationData, sgm) obj = do
   let modelCreationData' = updateModelCreationData bmu numeral modelCreationData
   return (w', modelCreationData', sgm')
 
-testOne :: ImageWain -> [(Numeral, Bool)] -> Object Action -> IO [(Numeral, Bool)]
+testOne :: PatternWain -> [(Numeral, Bool)] -> Object Action (ResponseTweaker Action) -> IO [(Numeral, Bool)]
 testOne w testStats obj = do
   putStrLn $ "-----"
   let (lds, _, _, _, r, _) = chooseAction [objectAppearance obj] w
@@ -210,15 +211,15 @@ readDirAndShuffle d = do
   files <- map (d2 ++) . drop 2 <$> getDirectoryContents d
   return $ evalRand (shuffle files) g
 
-readSamples :: FilePath -> IO [Object Action]
+readSamples :: FilePath -> IO [Object Action (ResponseTweaker Action)]
 readSamples dir = do
   files <- readDirAndShuffle dir
   mapM readOneSample files
 
-readOneSample :: FilePath -> IO (Object Action)
+readOneSample :: FilePath -> IO (Object Action (ResponseTweaker Action))
 readOneSample f = do
   img <- readImage f
-  return $ IObject img (takeFileName f)
+  return $ PObject img (takeFileName f)
 
 numeralStats :: [(Numeral, Bool)] -> [(String, Int, Int, Double)]
 numeralStats xs = ("all",total,totalCorrect,fraction):xs'

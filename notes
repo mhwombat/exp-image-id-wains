@@ -1,0 +1,98 @@
+To produce results.csv:
+
+grep stats singleWain*.log | sed 's/:.*classifier num models" /,/; s/,iStat.*//' | sort -u > temp1
+grep '"all"' singleWain*.log | sort | sed 's/:("all",10000,[^,]*//; s/)//' > temp2
+
+grep 'models created' singleWain*.log | sort | sed 's/:number of models created: /,/' > temp1
+grep '"all"' singleWain*.log | sort | sed 's/:("all",10000,[^,]*//; s/)//' > temp2
+join -t ',' temp1 temp2 | sed 's/singleWain-[^-]*/wain /; s/-/r0=/; s/-/ rf=/; s/-.*.log//' > results.csv
+Edit results.csv; copy heading and SOM data from exp-som-comparison/results.csv
+
+
+To produce plot from results.csv, use R:
+
+require(ggplot2)
+d <- read.csv('results.csv')
+ggplot(d, aes(x=num.models,y=accuracy,colour=classifier,shape=classifier)) + 
+  labs(x="number of models", y="accuracy") +
+  theme_bw() +
+  theme(legend.justification=c(1,1), legend.position=c(0.95,0.5)) +
+  scale_colour_manual(values = c("red","blue", "green")) +
+  geom_smooth() + 
+  geom_point()
+ggsave(file='accuracy.pdf', width=8, height=7);
+
+
+
+
+DEBUGGING NOTES
+
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAAAAABXZoBIAAAA0UlEQVR4nGNgGGDAPe3vKXlckqq/f//NxiEnehS3ZN6+30DJlbl22CT//gZJ/v59xxhTbtv/v0Dw6h6QwJCzvwvSOdnXruH370w0OYXnQBPvdHIxMMg/+/25kBXDF3tEwMxcoDJldMmTchCm/AkMSYQzFE79/7sERbLn928YE9PYmzBJUXug057JYZecAPTQXVsGrJLb7gIlt6D589bfv56eT/7+BQcTmhxDIThYIcRkdElguEAkn+1V5kKXZLDrg0jiiE+Pdb/XunvIYZekGwAAcICQlxrnDN8AAAAASUVORK5CYII="/>
+
+:l src/ALife/Creatur/Wain/Interaction/Image.hs
+img <- readImage "/home/eamybut/mnist/testData/0_3.png"
+
+import Data.ByteString  
+let bs = pack . pixels $ img
+
+
+
+import Codec.Binary.Base64.String
+
+
+import Codec.Binary.Base64Url
+
+import qualified Codec.Picture as P
+(Right (P.ImageY8 img)) <- P.readImage "/home/eamybut/mnist/testData/0_3.png"
+let ps = toList $ P.imageData img
+
+let img2 = P.Image 28 28 (fromList ps) :: P.Image P.Pixel8
+
+
+
+import qualified Data.ByteString               as B
+import qualified Data.ByteString.Lazy          as BL
+
+Data.ByteString.Base64.encode . B.concat . BL.toChunks . P.encodePng $ img2
+
+
+
+:l src/ALife/Creatur/Wain/Interaction/Image.hs
+img <- readImage "/home/eamybut/mnist/testData/0_3.png"
+let ps = pixels img
+let img2 = P.Image 28 28 (fromList ps) :: P.Image P.Pixel8
+import qualified Data.ByteString               as B
+import qualified Data.ByteString.Lazy          as BL
+
+img0 <- readImage "/home/eamybut/mnist/testData/0_525.png"
+img1 <- readImage "/home/eamybut/mnist/testData/1_716.png"
+img3 <- readImage "/home/eamybut/mnist/testData/3_51.png"
+img2 <- readImage "/home/eamybut/mnist/testData/2_1.png"
+img4 <- readImage "/home/eamybut/mnist/testData/4_8204.png"
+img5 <- readImage "/home/eamybut/mnist/testData/5_356.png"
+img6 <- readImage "/home/eamybut/mnist/testData/6_8083.png"
+img7 <- readImage "/home/eamybut/mnist/testData/7_3122.png"
+img8 <- readImage "/home/eamybut/mnist/testData/8_233.png"
+img9 <- readImage "/home/eamybut/mnist/testData/9_5672.png"
+let imgs = [img0, img1, img2, img3, img4, img5, img6, img7, img8, img9]
+
+
+
+
+
+grep '.png,' ../exp-som-comparison/sgm-0.119-0.1-0.0001.log | grep -v -E -e 'False|True' > temp1
+grep '^Image' singleWain-0.119-0.1-0.0001-0.1-0.0001-1.log | sed 's/^Image //' > temp2
+
+
+8112c8112
+< 2_1896.png,2,201
+---
+> 2_1896.png,2,1024
+
+2_1896.png,2,201,0.10445178071228492
+
+                 0.10445178071228492
+
+Why isn't SGM creating a new model here? Because maxSize was set to 1024!
+
+
